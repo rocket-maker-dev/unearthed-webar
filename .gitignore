@@ -1,0 +1,8 @@
+*.glb
+*.ply
+*.jpg
+*.jpeg
+*.png
+*.zip
+node_modules/
+.DS_Store

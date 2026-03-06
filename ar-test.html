@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>UNEARTHED — AR Test</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #000; overflow: hidden; height: 100vh; width: 100vw; font-family: system-ui, sans-serif; }
+
+    /* Cámara de fondo */
+    #cam-video {
+      position: fixed; inset: 0; width: 100%; height: 100%;
+      object-fit: cover; z-index: 1;
+    }
+
+    /* Canvas AR encima */
+    #ar-canvas {
+      position: fixed; inset: 0; width: 100%; height: 100%;
+      z-index: 2; pointer-events: none;
+    }
+
+    /* UI encima de todo */
+    #ui { position: fixed; inset: 0; z-index: 10; pointer-events: none; }
+
+    /* Landing */
+    #landing {
+      position: fixed; inset: 0; z-index: 20;
+      background: #0a0a1a; color: #fff;
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; padding: 28px; text-align: center; gap: 14px;
+    }
+    #landing h1 { font-size: 1.8rem; letter-spacing: 2px; }
+    #landing .sub { color: #7799cc; font-size: 0.85rem; }
+    .badge { background: #111830; border: 1px solid #2244cc44; border-radius: 10px; padding: 10px 18px; font-size: 0.78rem; color: #99aadd; }
+    #btn-start { background: #2244cc; color: #fff; border: none; border-radius: 14px; padding: 16px 36px; font-size: 1.05rem; cursor: pointer; pointer-events: all; }
+    #error-msg { color: #ff6666; font-size: 0.82rem; display: none; }
+
+    /* HUD top */
+    #hud-top {
+      position: absolute; top: 0; left: 0; right: 0;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 16px;
+      background: linear-gradient(to bottom, rgba(0,0,0,0.6), transparent);
+      pointer-events: all;
+    }
+    #hud-title { font-size: 0.85rem; font-weight: 700; letter-spacing: 1px; color: #fff; }
+    #btn-exit { background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2); color: #fff; border-radius: 8px; padding: 7px 14px; cursor: pointer; font-size: 0.82rem; }
+
+    /* Phase banner */
+    #phase-banner {
+      position: absolute; top: 62px; left: 50%; transform: translateX(-50%);
+      background: rgba(10,20,60,0.88); border: 1px solid #4466ff66;
+      border-radius: 20px; padding: 8px 20px; font-size: 0.78rem; color: #aaccff;
+      white-space: nowrap;
+    }
+
+    /* Crosshair de posicionamiento */
+    #crosshair {
+      position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+      width: 70px; height: 70px; display: none;
+    }
+    #crosshair.active { display: block; }
+    #crosshair::before, #crosshair::after {
+      content: ''; position: absolute; background: rgba(100,170,255,0.8);
+    }
+    #crosshair::before { width: 2px; height: 100%; left: 50%; transform: translateX(-50%); }
+    #crosshair::after  { height: 2px; width: 100%; top: 50%; transform: translateY(-50%); }
+    .crosshair-ring {
+      position: absolute; inset: 8px;
+      border: 2px solid rgba(100,170,255,0.7); border-radius: 50%;
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+    @keyframes pulse { 0%,100% { opacity: 0.7; transform: scale(1); } 50% { opacity: 0.3; transform: scale(1.1); } }
+
+    /* Align controls */
+    #align-controls {
+      display: none; position: absolute; bottom: 110px; left: 50%; transform: translateX(-50%);
+      pointer-events: all; flex-direction: column; align-items: center; gap: 10px;
+    }
+    #align-controls.show { display: flex; }
+    .align-row { display: flex; gap: 10px; }
+    .ctrl-btn {
+      background: rgba(20,30,80,0.9); border: 1px solid #4466ff55;
+      color: #fff; border-radius: 10px; padding: 12px 20px;
+      font-size: 0.9rem; cursor: pointer; pointer-events: all;
+    }
+    .ctrl-btn:active { background: rgba(40,60,160,0.95); }
+    #btn-confirm {
+      background: #22aa44; border: none; border-radius: 14px;
+      padding: 14px 32px; font-size: 1rem; color: #fff;
+      cursor: pointer; pointer-events: all;
+      box-shadow: 0 4px 16px #22aa4455;
+    }
+    #align-hint { font-size: 0.72rem; color: #7799cc; text-align: center; max-width: 260px; }
+
+    /* Bottom hint */
+    #hud-bottom {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      padding: 18px; text-align: center;
+      background: linear-gradient(to top, rgba(0,0,0,0.6), transparent);
+    }
+    #instruction { font-size: 0.9rem; color: #eee; }
+
+    /* Tap to place area */
+    #tap-zone {
+      position: absolute; inset: 0; display: none;
+      pointer-events: all; cursor: crosshair;
+    }
+    #tap-zone.active { display: block; }
+
+    /* Info panel */
+    #info-panel {
+      display: none; position: fixed; bottom: 90px; left: 14px; right: 14px;
+      z-index: 30; background: rgba(8,10,28,0.94); border-radius: 16px;
+      border-left: 4px solid #4466ff; padding: 18px; pointer-events: all;
+    }
+    #info-panel.active { display: block; }
+    #info-panel h3 { font-size: 1rem; margin-bottom: 4px; }
+    #info-panel .meta { font-size: 0.72rem; color: #7799cc; margin-bottom: 8px; }
+    #info-panel p { font-size: 0.82rem; color: #ccc; line-height: 1.5; }
+    #btn-close-info { float: right; background: none; border: none; color: #888; font-size: 1.1rem; cursor: pointer; pointer-events: all; }
+
+    /* Loading */
+    #loading { display: none; position: fixed; inset: 0; z-index: 50; background: rgba(0,0,0,0.75); align-items: center; justify-content: center; flex-direction: column; gap: 14px; color: #fff; }
+    #loading.show { display: flex; }
+    .spinner { width: 40px; height: 40px; border: 3px solid #222; border-top-color: #4466ff; border-radius: 50%; animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+
+<!-- Cámara y canvas -->
+<video id="cam-video" autoplay playsinline muted></video>
+<canvas id="ar-canvas"></canvas>
+
+<!-- UI -->
+<div id="ui">
+  <div id="hud-top" style="display:none">
+    <span id="hud-title">⛏️ UNEARTHED TEST</span>
+    <button id="btn-exit">✕ Salir</button>
+  </div>
+  <div id="phase-banner" style="display:none"></div>
+  <div id="crosshair"><div class="crosshair-ring"></div></div>
+  <div id="tap-zone"></div>
+
+  <div id="align-controls">
+    <div class="align-row">
+      <button class="ctrl-btn" id="rot-left">↺ −15°</button>
+      <button class="ctrl-btn" id="rot-right">↻ +15°</button>
+    </div>
+    <div class="align-row">
+      <button class="ctrl-btn" id="dist-near">← Acercar</button>
+      <button class="ctrl-btn" id="dist-far">→ Alejar</button>
+    </div>
+    <div id="align-hint">Ajusta hasta que el marco encaje con el mueble</div>
+    <button id="btn-confirm">✅ Confirmar posición</button>
+  </div>
+
+  <div id="hud-bottom" style="display:none">
+    <span id="instruction"></span>
+  </div>
+</div>
+
+<!-- Info panel -->
+<div id="info-panel">
+  <button id="btn-close-info">✕</button>
+  <h3 id="info-title"></h3>
+  <div class="meta" id="info-meta"></div>
+  <p id="info-desc"></p>
+</div>
+
+<!-- Landing -->
+<div id="landing">
+  <h1>⛏️ UNEARTHED</h1>
+  <p class="sub">AR Test — Mueble 2m × 0.6m</p>
+  <div class="badge">
+    Sin WebXR · getUserMedia + giroscopio<br>
+    Alinea el marco → ancla permanente
+  </div>
+  <button id="btn-start">📷 Iniciar cámara</button>
+  <p id="error-msg"></p>
+</div>
+
+<!-- Loading -->
+<div id="loading"><div class="spinner"></div><p id="loading-msg">Iniciando...</p></div>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+<script>
+// ═══════════════════════════════════════════════════════════
+// CONFIG — ajusta a tu mueble
+// ═══════════════════════════════════════════════════════════
+const MUEBLE_W = 2.0;   // metros ancho
+const MUEBLE_D = 0.60;  // metros fondo
+const MUEBLE_H = 0.80;  // metros alto del mueble (superfice)
+const DIST_INICIAL = 1.5; // distancia inicial de colocación (metros)
+
+const HALLAZGOS = [
+  { id: 'ceramica',  x:  0.65, y: 0.20, z: -0.10, ry:   0, titulo: 'Cerámica Terra Sigillata', periodo: 'Romano',      año: -150, desc: 'Fragmentos de cerámica romana de lujo. Conexiones comerciales con el Mediterráneo.', emoji: '🏺', color: '#e74c3c', tipo: 'panel' },
+  { id: 'mosaico',   x:  0,    y: 0.01, z:  0,    ry:   0, titulo: 'Mosaico del Triclinium',   periodo: 'Romano',      año: -200, desc: 'Suelo decorado con teselas blancas y negras. Era el comedor de una villa romana.', emoji: '🎨', color: '#f39c12', tipo: 'plano', sx: 1.6, sy: 0.04, sz: 0.45 },
+  { id: 'tumba',     x: -0.60, y: 0.20, z:  0.10, ry:  20, titulo: 'Enterramiento Medieval',   periodo: 'Medieval',    año: 1150, desc: 'Tumba de lajas orientada este-oeste. Necrópolis del s. XII.', emoji: '⚱️', color: '#9b59b6', tipo: 'panel' },
+  { id: 'muralla',   x: -0.80, y: 0.25, z:  0,    ry:   0, titulo: 'Muralla del Castro',       periodo: 'Prerromano',  año: -500, desc: 'Base de muralla perimetral de granito sin argamasa.', emoji: '🏰', color: '#2ecc71', tipo: 'bloque', sx: 0.12, sy: 0.5, sz: 0.45 },
+  { id: 'hogar',     x:  0.30, y: 0.15, z:  0.15, ry: -15, titulo: 'Hogar Prehistórico',       periodo: 'Prehistórico', año: -900, desc: 'Hoguera con cenizas y carbones. C14: ~900 a.C.', emoji: '🔥', color: '#e67e22', tipo: 'panel' },
+  { id: 'grid',      x:  0,    y: 0.005,z:  0,    ry:   0, titulo: '', periodo: '', año: 0, desc: '', emoji: '', color: '#3498db', tipo: 'grid', filas: 2, cols: 4, celda: 0.5 }
+];
+
+// ═══════════════════════════════════════════════════════════
+// THREE.JS
+// ═══════════════════════════════════════════════════════════
+let scene, camera, renderer;
+let anchorGroup;        // Grupo padre — toda la excavación
+let placed = false, confirmed = false;
+let anchorRotY = 0, anchorDist = DIST_INICIAL;
+let gyro = { alpha: 0, beta: 0, gamma: 0 };
+let gyroActive = false;
+let animId;
+
+function initThree() {
+  const canvas = document.getElementById('ar-canvas');
+  canvas.width  = window.innerWidth;
+  canvas.height = window.innerHeight;
+
+  scene = new THREE.Scene();
+
+  // FOV ajustado a cámara trasera del móvil
+  camera = new THREE.PerspectiveCamera(70, canvas.width / canvas.height, 0.05, 100);
+  camera.position.set(0, 1.2, 0);
+
+  renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setSize(canvas.width, canvas.height);
+  renderer.setClearColor(0x000000, 0);
+
+  scene.add(new THREE.AmbientLight(0xffffff, 0.85));
+  const dir = new THREE.DirectionalLight(0xffffff, 0.7);
+  dir.position.set(2, 5, 3);
+  scene.add(dir);
+
+  window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+// ANCHOR GROUP — wireframe box + hallazgos
+// ═══════════════════════════════════════════════════════════
+function buildAnchorGroup() {
+  anchorGroup = new THREE.Group();
+  scene.add(anchorGroup);
+
+  // — Wireframe box (marco de alineación, visible hasta confirmar)
+  const boxGeo = new THREE.BoxGeometry(MUEBLE_W, MUEBLE_H, MUEBLE_D);
+  const boxMat = new THREE.MeshBasicMaterial({ color: 0x4488ff, transparent: true, opacity: 0.06, side: THREE.DoubleSide });
+  const box = new THREE.Mesh(boxGeo, boxMat);
+  box.position.y = MUEBLE_H / 2;
+  box.name = 'align-box';
+  anchorGroup.add(box);
+
+  const wire = new THREE.LineSegments(
+    new THREE.EdgesGeometry(boxGeo),
+    new THREE.LineBasicMaterial({ color: 0x66aaff, transparent: true, opacity: 0.75 })
+  );
+  wire.position.y = MUEBLE_H / 2;
+  wire.name = 'align-wire';
+  anchorGroup.add(wire);
+
+  // Suelo del mueble con grid
+  const floorGeo = new THREE.PlaneGeometry(MUEBLE_W, MUEBLE_D, 4, 2);
+  const floorMat = new THREE.MeshBasicMaterial({ color: 0x4488ff, wireframe: true, transparent: true, opacity: 0.25 });
+  const floor = new THREE.Mesh(floorGeo, floorMat);
+  floor.rotation.x = -Math.PI / 2;
+  floor.position.y = 0.002;
+  floor.name = 'align-floor';
+  anchorGroup.add(floor);
+
+  // Etiqueta dimensiones
+  const lblSpr = makeTextSprite(`${MUEBLE_W}m × ${MUEBLE_D}m`, '#88ccff', 0.22);
+  lblSpr.position.set(0, MUEBLE_H + 0.18, 0);
+  lblSpr.name = 'align-label';
+  anchorGroup.add(lblSpr);
+
+  // — Hallazgos
+  HALLAZGOS.forEach(h => {
+    let obj;
+    switch (h.tipo) {
+      case 'panel':  obj = buildPanel(h); break;
+      case 'plano':
+      case 'bloque': obj = buildBloque(h); break;
+      case 'grid':   obj = buildGrid(h); break;
+    }
+    if (obj) {
+      obj.visible = false;  // Ocultos hasta confirmar
+      anchorGroup.add(obj);
+    }
+  });
+}
+
+function hideAlignGuides() {
+  anchorGroup.traverse(c => {
+    if (c.name && c.name.startsWith('align-')) c.visible = false;
+  });
+  anchorGroup.children.forEach(c => {
+    if (!c.name || !c.name.startsWith('align-')) c.visible = true;
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+// BUILDERS
+// ═══════════════════════════════════════════════════════════
+function buildPanel(h) {
+  const g = new THREE.Group();
+  g.position.set(h.x, h.y, h.z);
+  g.rotation.y = h.ry * Math.PI / 180;
+
+  const sphere = new THREE.Mesh(
+    new THREE.SphereGeometry(0.06, 16, 16),
+    new THREE.MeshStandardMaterial({ color: h.color, emissive: h.color, emissiveIntensity: 0.6 })
+  );
+  sphere.userData.float = true;
+  sphere.userData.off = Math.random() * Math.PI * 2;
+  g.add(sphere);
+
+  const ring = new THREE.Mesh(
+    new THREE.RingGeometry(0.09, 0.12, 32).rotateX(-Math.PI/2),
+    new THREE.MeshBasicMaterial({ color: h.color, transparent: true, opacity: 0.5, side: THREE.DoubleSide })
+  );
+  ring.userData.pulse = true;
+  g.add(ring);
+
+  const bb = makeBillboard(h);
+  bb.position.y = 0.22;
+  g.add(bb);
+
+  g.userData.hallazgo = h;
+  return g;
+}
+
+function buildBloque(h) {
+  const g = new THREE.Group();
+  g.position.set(h.x, h.y, h.z);
+  g.rotation.y = h.ry * Math.PI / 180;
+  const dims = [h.sx||0.5, h.sy||0.5, h.sz||0.5];
+  const geo = new THREE.BoxGeometry(...dims);
+  const mesh = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ color: h.color, transparent: true, opacity: 0.3 }));
+  mesh.position.y = dims[1]/2;
+  g.add(mesh);
+  const wire = new THREE.LineSegments(new THREE.EdgesGeometry(geo), new THREE.LineBasicMaterial({ color: h.color, transparent: true, opacity: 0.8 }));
+  wire.position.y = dims[1]/2;
+  g.add(wire);
+  const bb = makeBillboard(h);
+  bb.position.set(0, dims[1] + 0.3, 0);
+  g.add(bb);
+  g.userData.hallazgo = h;
+  return g;
+}
+
+function buildGrid(h) {
+  const g = new THREE.Group();
+  g.position.set(h.x, h.y, h.z);
+  const W = h.cols * h.celda, H = h.filas * h.celda;
+  const mat = new THREE.LineBasicMaterial({ color: h.color, transparent: true, opacity: 0.4 });
+  for (let i = 0; i <= h.cols; i++) {
+    const x = i * h.celda - W/2;
+    g.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(x,0,-H/2), new THREE.Vector3(x,0,H/2)]), mat));
+  }
+  for (let j = 0; j <= h.filas; j++) {
+    const z = j * h.celda - H/2;
+    g.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(-W/2,0,z), new THREE.Vector3(W/2,0,z)]), mat));
+  }
+  return g;
+}
+
+// ═══════════════════════════════════════════════════════════
+// SPRITES
+// ═══════════════════════════════════════════════════════════
+function makeBillboard(h) {
+  const c = document.createElement('canvas');
+  c.width = 480; c.height = 180;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = 'rgba(8,10,26,0.90)'; rrect(ctx,0,0,480,180,12); ctx.fill();
+  ctx.fillStyle = h.color; rrect(ctx,0,0,6,180,3); ctx.fill();
+  if (h.emoji) { ctx.font='40px serif'; ctx.textBaseline='middle'; ctx.fillText(h.emoji,16,48); }
+  ctx.fillStyle='#fff'; ctx.font='bold 22px system-ui'; ctx.fillText(h.titulo, h.emoji?66:16, 44);
+  ctx.fillStyle='rgba(255,255,255,0.6)'; ctx.font='17px system-ui'; wrapText(ctx, h.desc, 16, 95, 455, 22);
+  const tex = new THREE.CanvasTexture(c);
+  tex.minFilter = THREE.LinearFilter;
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false }));
+  sp.scale.set(1.05, 0.39, 1);
+  return sp;
+}
+
+function makeTextSprite(txt, color, sz) {
+  const c = document.createElement('canvas'); c.width=256; c.height=64;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle=color; ctx.font='bold 36px system-ui';
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText(txt, 128, 32);
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), transparent: true, depthTest: false }));
+  sp.scale.set(sz*2.5, sz, 1); return sp;
+}
+
+function rrect(ctx,x,y,w,h,r) {
+  ctx.beginPath(); ctx.moveTo(x+r,y); ctx.lineTo(x+w-r,y); ctx.quadraticCurveTo(x+w,y,x+w,y+r); ctx.lineTo(x+w,y+h-r); ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h); ctx.lineTo(x+r,y+h); ctx.quadraticCurveTo(x,y+h,x,y+h-r); ctx.lineTo(x,y+r); ctx.quadraticCurveTo(x,y,x+r,y); ctx.closePath();
+}
+function wrapText(ctx,text,x,y,maxW,lh) {
+  if(!text) return;
+  const words=text.split(' '); let line='';
+  for(const w of words){ const t=line+w+' '; if(ctx.measureText(t).width>maxW&&line){ctx.fillText(line.trim(),x,y);line=w+' ';y+=lh;}else line=t; }
+  ctx.fillText(line.trim(),x,y);
+}
+
+// ═══════════════════════════════════════════════════════════
+// GYROSCOPE
+// ═══════════════════════════════════════════════════════════
+async function requestGyro() {
+  if (typeof DeviceOrientationEvent !== 'undefined' &&
+      typeof DeviceOrientationEvent.requestPermission === 'function') {
+    try {
+      const res = await DeviceOrientationEvent.requestPermission();
+      if (res === 'granted') registerGyro();
+    } catch(e) { console.warn('Gyro permission denied'); }
+  } else if (typeof DeviceOrientationEvent !== 'undefined') {
+    registerGyro();
+  }
+}
+
+function registerGyro() {
+  window.addEventListener('deviceorientation', e => {
+    if (e.alpha !== null) {
+      gyroActive = true;
+      gyro.alpha = e.alpha || 0;
+      gyro.beta  = e.beta  || 0;
+      gyro.gamma = e.gamma || 0;
+    }
+  }, true);
+}
+
+// ═══════════════════════════════════════════════════════════
+// RENDER LOOP
+// ═══════════════════════════════════════════════════════════
+function renderLoop(ts) {
+  animId = requestAnimationFrame(renderLoop);
+  const t = ts * 0.001;
+
+  if (confirmed && gyroActive) {
+    // Actualizar orientación de cámara desde giroscopio
+    // beta = inclinación frontal, alpha = brújula
+    const beta  = gyro.beta  * Math.PI / 180;
+    const alpha = gyro.alpha * Math.PI / 180;
+    const gamma = gyro.gamma * Math.PI / 180;
+    // Euler para cámara vertical (portrait)
+    camera.rotation.order = 'YXZ';
+    camera.rotation.x = beta  - Math.PI / 2;
+    camera.rotation.y = -alpha;
+    camera.rotation.z = -gamma;
+  } else if (confirmed) {
+    // Sin giroscopio: rotación lenta de demo
+    camera.rotation.y = Math.sin(t * 0.1) * 0.3;
+    camera.rotation.x = -0.3;
+  }
+
+  // Animaciones
+  if (anchorGroup) {
+    anchorGroup.traverse(c => {
+      if (c.userData.float) c.position.y = Math.sin(t * 1.5 + (c.userData.off||0)) * 0.02;
+      if (c.userData.pulse) {
+        const s = 1 + Math.sin(t*2)*0.14;
+        c.scale.set(s,s,s);
+        if(c.material) c.material.opacity = 0.3 + Math.sin(t*2)*0.18;
+      }
+    });
+  }
+
+  renderer.render(scene, camera);
+}
+
+// ═══════════════════════════════════════════════════════════
+// PLACEMENT
+// ═══════════════════════════════════════════════════════════
+function placeAnchor(tapX, tapY) {
+  if (placed) return;
+  placed = true;
+
+  // Posición: delante de la cámara a anchorDist metros
+  const dir = new THREE.Vector3(0, 0, -1);
+  dir.applyEuler(camera.rotation);
+  dir.y = 0; // Mantener horizontal
+  dir.normalize();
+
+  const pos = camera.position.clone().add(dir.multiplyScalar(anchorDist));
+  pos.y = 0; // Anclar al suelo
+
+  anchorGroup.position.copy(pos);
+  anchorGroup.rotation.y = anchorRotY;
+  anchorGroup.visible = true;
+
+  // Mostrar controles de ajuste
+  document.getElementById('tap-zone').classList.remove('active');
+  document.getElementById('crosshair').classList.remove('active');
+  document.getElementById('align-controls').classList.add('show');
+  setBanner('🔄 Ajusta hasta que el marco encaje — luego confirma');
+  setInstruction('Usa los botones para alinear');
+}
+
+function confirmPlacement() {
+  confirmed = true;
+  document.getElementById('align-controls').classList.remove('show');
+  document.getElementById('phase-banner').style.display = 'none';
+  setInstruction('✅ Anclado — muévete alrededor');
+
+  // Ocultar guías de alineación, mostrar hallazgos
+  hideAlignGuides();
+
+  // Pedir giroscopio en iOS (requiere gesto del usuario)
+  requestGyro();
+
+  if (navigator.vibrate) navigator.vibrate([50, 30, 100]);
+}
+
+// ═══════════════════════════════════════════════════════════
+// CAMERA INIT
+// ═══════════════════════════════════════════════════════════
+async function startCamera() {
+  showLoading('Iniciando cámara...');
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } },
+      audio: false
+    });
+    const video = document.getElementById('cam-video');
+    video.srcObject = stream;
+    await new Promise(res => { video.onloadedmetadata = () => { video.play(); res(); }; });
+    return true;
+  } catch(e) {
+    document.getElementById('error-msg').textContent = '❌ Sin acceso a cámara: ' + e.message;
+    document.getElementById('error-msg').style.display = 'block';
+    hideLoading();
+    return false;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// APP START
+// ═══════════════════════════════════════════════════════════
+async function startAR() {
+  const ok = await startCamera();
+  if (!ok) return;
+
+  showLoading('Preparando AR...');
+  initThree();
+  buildAnchorGroup();
+  hideLoading();
+
+  // Hide landing, show AR UI
+  document.getElementById('landing').style.display = 'none';
+  document.getElementById('hud-top').style.display = 'flex';
+  document.getElementById('hud-bottom').style.display = 'block';
+
+  // Tap zone active
+  document.getElementById('tap-zone').classList.add('active');
+  document.getElementById('crosshair').classList.add('active');
+  setBanner('📍 Apunta al mueble y toca para colocar');
+  setInstruction('Toca en el centro del mueble');
+
+  // Tap handler
+  document.getElementById('tap-zone').addEventListener('click', e => {
+    placeAnchor(e.clientX, e.clientY);
+  });
+
+  // Start render
+  requestAnimationFrame(renderLoop);
+}
+
+function stopAR() {
+  if (animId) cancelAnimationFrame(animId);
+  const video = document.getElementById('cam-video');
+  if (video.srcObject) video.srcObject.getTracks().forEach(t => t.stop());
+  document.getElementById('landing').style.display = 'flex';
+  document.getElementById('hud-top').style.display = 'none';
+  document.getElementById('hud-bottom').style.display = 'none';
+  document.getElementById('phase-banner').style.display = 'none';
+  document.getElementById('crosshair').classList.remove('active');
+  document.getElementById('tap-zone').classList.remove('active');
+  document.getElementById('align-controls').classList.remove('show');
+  placed = false; confirmed = false; anchorRotY = 0; anchorDist = DIST_INICIAL;
+}
+
+// ═══════════════════════════════════════════════════════════
+// UI HELPERS
+// ═══════════════════════════════════════════════════════════
+function setBanner(txt) {
+  const b = document.getElementById('phase-banner');
+  b.textContent = txt; b.style.display = 'block';
+}
+function setInstruction(txt) { document.getElementById('instruction').textContent = txt; }
+function showLoading(msg) { document.getElementById('loading-msg').textContent = msg||'...'; document.getElementById('loading').classList.add('show'); }
+function hideLoading() { document.getElementById('loading').classList.remove('show'); }
+
+// ═══════════════════════════════════════════════════════════
+// EVENTS
+// ═══════════════════════════════════════════════════════════
+document.getElementById('btn-start').addEventListener('click', startAR);
+document.getElementById('btn-exit').addEventListener('click', stopAR);
+document.getElementById('btn-confirm').addEventListener('click', confirmPlacement);
+document.getElementById('btn-close-info').addEventListener('click', () => document.getElementById('info-panel').classList.remove('active'));
+
+document.getElementById('rot-left').addEventListener('click', () => {
+  anchorRotY -= Math.PI/12;
+  if (anchorGroup) anchorGroup.rotation.y = anchorRotY;
+});
+document.getElementById('rot-right').addEventListener('click', () => {
+  anchorRotY += Math.PI/12;
+  if (anchorGroup) anchorGroup.rotation.y = anchorRotY;
+});
+document.getElementById('dist-near').addEventListener('click', () => {
+  if (!placed || confirmed) return;
+  anchorDist = Math.max(0.5, anchorDist - 0.2);
+  // Recalcular posición
+  placed = false;
+  placeAnchor(window.innerWidth/2, window.innerHeight/2);
+});
+document.getElementById('dist-far').addEventListener('click', () => {
+  if (!placed || confirmed) return;
+  anchorDist = Math.min(4.0, anchorDist + 0.2);
+  placed = false;
+  placeAnchor(window.innerWidth/2, window.innerHeight/2);
+});
+</script>
+</body>
+</html>

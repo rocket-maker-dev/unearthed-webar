@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>FLL UNEARTHED — v3 Nube de Puntos</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #0a0a1a; color: #fff; font-family: sans-serif; overflow: hidden; height: 100vh; }
+
+    #landing {
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; height: 100vh; padding: 24px; text-align: center;
+    }
+    #landing h1 { font-size: 2rem; margin-bottom: 8px; }
+    .subtitle { color: #8888aa; margin-bottom: 24px; font-size: 0.9rem; }
+    .badge {
+      background: #1a1a3a; border: 1px solid #4466ff;
+      border-radius: 8px; padding: 12px 20px; margin-bottom: 20px;
+      font-size: 0.8rem; color: #aaccff; max-width: 340px;
+    }
+    .badge b { color: #fff; }
+    .btn {
+      background: #2244cc; color: #fff; border: none; border-radius: 12px;
+      padding: 14px 28px; font-size: 1rem; cursor: pointer; margin: 6px;
+      transition: background 0.2s;
+    }
+    .btn:hover { background: #3355ee; }
+    .btn:disabled { background: #333; color: #666; cursor: default; }
+    .btn.secondary { background: #333; }
+    #status-msg { margin-top: 16px; font-size: 0.82rem; color: #aaa; }
+
+    /* Overlay AR */
+    #overlay { display: none; position: fixed; inset: 0; z-index: 10; pointer-events: none; }
+    #overlay.active { display: block; }
+    .hud-top {
+      position: absolute; top: 0; left: 0; right: 0;
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 14px 16px; pointer-events: all;
+      background: linear-gradient(to bottom, rgba(0,0,0,0.6), transparent);
+    }
+    .hud-top .title { font-size: 0.9rem; font-weight: bold; color: #fff; }
+    .hud-bottom {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      padding: 20px 16px; text-align: center;
+      background: linear-gradient(to top, rgba(0,0,0,0.6), transparent);
+    }
+    #instruction { font-size: 0.9rem; color: #fff; }
+    #btn-exit { background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: #fff; border-radius: 8px; padding: 8px 14px; cursor: pointer; pointer-events: all; }
+
+    /* Controles AR */
+    #ar-controls {
+      position: absolute; bottom: 70px; left: 50%; transform: translateX(-50%);
+      display: flex; gap: 10px; pointer-events: all;
+    }
+    .ar-btn {
+      background: rgba(20,20,50,0.85); border: 1px solid rgba(100,130,255,0.4);
+      color: #fff; border-radius: 10px; padding: 10px 14px;
+      font-size: 0.78rem; cursor: pointer;
+    }
+    .ar-btn.active { background: rgba(40,80,200,0.9); border-color: #6699ff; }
+
+    /* Preview */
+    #preview-canvas { display: none; position: fixed; inset: 0; }
+    #preview-canvas.active { display: block; }
+    #btn-back { display: none; position: fixed; top: 14px; left: 14px; z-index: 20; background: rgba(0,0,0,0.6); color: #fff; border: 1px solid #444; border-radius: 8px; padding: 8px 14px; cursor: pointer; }
+    #btn-back.active { display: block; }
+
+    /* Loading */
+    #loading { display: none; position: fixed; inset: 0; z-index: 100; background: rgba(0,0,0,0.7); align-items: center; justify-content: center; flex-direction: column; gap: 16px; }
+    #loading.active { display: flex; }
+    .spinner { width: 40px; height: 40px; border: 3px solid #444; border-top-color: #4466ff; border-radius: 50%; animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Info panel (tap on anchor) */
+    #info-panel {
+      display: none; position: fixed; bottom: 140px; left: 16px; right: 16px;
+      z-index: 50; background: rgba(10,10,30,0.92); border: 1px solid #4466ff;
+      border-radius: 16px; padding: 18px; pointer-events: all;
+    }
+    #info-panel.active { display: block; }
+    #info-panel h3 { font-size: 1rem; margin-bottom: 6px; }
+    #info-panel p { font-size: 0.82rem; color: #aaa; line-height: 1.4; }
+    #btn-close-info { float: right; background: none; border: none; color: #aaa; font-size: 1.2rem; cursor: pointer; }
+  </style>
+</head>
+<body>
+
+  <!-- Landing -->
+  <div id="landing">
+    <h1>⛏️ UNEARTHED v3</h1>
+    <p class="subtitle">AR con Nube de Puntos Scaniverse</p>
+    <div class="badge">
+      <b>Modelo cargado:</b> Scaniverse 2026-03-02<br>
+      1.098 vértices · 2.89m × 1.91m × 1.14m<br>
+      Textura fotogramétrica JPEG 2.1MB
+    </div>
+    <button id="btn-ar" class="btn" disabled>🔭 Iniciar AR</button>
+    <button id="btn-preview" class="btn secondary">👁️ Vista Previa 3D</button>
+    <p id="status-msg">Comprobando soporte WebXR...</p>
+  </div>
+
+  <!-- AR Overlay -->
+  <div id="overlay">
+    <div class="hud-top">
+      <span class="title">⛏️ UNEARTHED v3 — Nube de Puntos</span>
+      <button id="btn-exit">✕ Salir</button>
+    </div>
+    <div id="ar-controls">
+      <button class="ar-btn active" id="btn-toggle-scan">☁️ Scan</button>
+      <button class="ar-btn active" id="btn-toggle-anchors">📍 Anclas</button>
+      <button class="ar-btn" id="btn-reset">↺ Reset</button>
+    </div>
+    <div class="hud-bottom">
+      <span id="instruction">Buscando superficie...</span>
+    </div>
+  </div>
+
+  <!-- Info Panel -->
+  <div id="info-panel">
+    <button id="btn-close-info">✕</button>
+    <h3 id="info-title">Título</h3>
+    <p id="info-desc">Descripción</p>
+  </div>
+
+  <!-- Preview Canvas -->
+  <canvas id="preview-canvas"></canvas>
+  <button id="btn-back">← Volver</button>
+
+  <!-- Loading -->
+  <div id="loading">
+    <div class="spinner"></div>
+    <p id="loading-msg">Cargando...</p>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/js/loaders/GLTFLoader.js"></script>
+  <script>
+  // ─── CONFIG v3 ───────────────────────────────────────
+  const SCAN_URL = 'https://espaciovivo.gal/unearthed/models/escaneo-scaniverse.glb';
+  const SCAN_OPACITY = 0.30;
+
+  // Anclas arqueológicas relativas al scan (coords en metros)
+  // El scan mide 2.89×1.91×1.14m — origen en su centro
+  const ANCLAS = [
+    { id: 'ceramica', pos: [-0.8, 0.5, -0.2], color: '#e74c3c', titulo: 'Cerámica Romana (s. II d.C.)', desc: 'Fragmentos de terra sigillata encontrados en el estrato III.', icono: '🏺' },
+    { id: 'mosaico', pos: [0, 0.02, 0], color: '#f39c12', titulo: 'Mosaico de la Villa', desc: 'Reconstrucción del mosaico geométrico del triclinium.', icono: '🎨', tipo: 'plano', escala: [1.2, 0.04, 0.9] },
+    { id: 'tumba', pos: [0.9, 0.4, 0.3], color: '#9b59b6', titulo: 'Enterramiento Medieval (s. XII)', desc: 'Tumba de lajas correspondiente a la necrópolis medieval.', icono: '⚱️' },
+    { id: 'muralla', pos: [-1.1, 0.5, 0], color: '#2ecc71', titulo: 'Muralla del Castro', desc: 'Base de la muralla perimetral del castro prerromano.', icono: '🏰', tipo: 'bloque', escala: [0.25, 1.0, 1.5] },
+    { id: 'hogar', pos: [0.5, 0.3, -0.3], color: '#e67e22', titulo: 'Hogar Prehistórico', desc: 'Restos de estructura de combustión. C14: ~900 a.C.', icono: '🔥' },
+    { id: 'grid', pos: [0, 0.01, 0], color: '#3498db', titulo: 'Cuadrícula', tipo: 'grid', filas: 3, columnas: 6, celda: 0.5 }
+  ];
+
+  // ─── STATE ───────────────────────────────────────────
+  let renderer, scene, camera;
+  let xrSession = null, hitTestSource = null, hitTestSourceRequested = false;
+  let reticle, anchorGroup, scanModel;
+  let placed = false;
+  let showScan = true, showAnchors = true;
+  let isPreviewMode = false;
+
+  // ─── DOM ─────────────────────────────────────────────
+  const $landing    = document.getElementById('landing');
+  const $overlay    = document.getElementById('overlay');
+  const $instruction= document.getElementById('instruction');
+  const $btnAr      = document.getElementById('btn-ar');
+  const $btnPreview = document.getElementById('btn-preview');
+  const $btnExit    = document.getElementById('btn-exit');
+  const $btnBack    = document.getElementById('btn-back');
+  const $btnScan    = document.getElementById('btn-toggle-scan');
+  const $btnAnchors = document.getElementById('btn-toggle-anchors');
+  const $btnReset   = document.getElementById('btn-reset');
+  const $status     = document.getElementById('status-msg');
+  const $loading    = document.getElementById('loading');
+  const $loadingMsg = document.getElementById('loading-msg');
+  const $previewCanvas = document.getElementById('preview-canvas');
+  const $infoPanel  = document.getElementById('info-panel');
+  const $infoTitle  = document.getElementById('info-title');
+  const $infoDesc   = document.getElementById('info-desc');
+  const $btnCloseInfo = document.getElementById('btn-close-info');
+
+  // ─── INIT ────────────────────────────────────────────
+  async function init() {
+    if (navigator.xr) {
+      try {
+        const ok = await navigator.xr.isSessionSupported('immersive-ar');
+        $btnAr.disabled = !ok;
+        $status.textContent = ok
+          ? '✅ WebXR AR disponible'
+          : '⚠️ WebXR AR no disponible — usa Vista Previa';
+      } catch(e) {
+        $btnAr.disabled = true;
+        $status.textContent = '⚠️ Error WebXR';
+      }
+    } else {
+      $btnAr.disabled = true;
+      $status.textContent = '⚠️ WebXR no disponible — usa Vista Previa';
+    }
+
+    $btnAr.addEventListener('click', startAR);
+    $btnPreview.addEventListener('click', startPreview);
+    $btnExit.addEventListener('click', exitAR);
+    $btnBack.addEventListener('click', exitPreview);
+    $btnCloseInfo.addEventListener('click', () => $infoPanel.classList.remove('active'));
+    $btnReset.addEventListener('click', resetPlacement);
+    $btnScan.addEventListener('click', () => {
+      showScan = !showScan;
+      if (scanModel) scanModel.visible = showScan;
+      $btnScan.classList.toggle('active', showScan);
+    });
+    $btnAnchors.addEventListener('click', () => {
+      showAnchors = !showAnchors;
+      if (anchorGroup) anchorGroup.visible = showAnchors;
+      $btnAnchors.classList.toggle('active', showAnchors);
+    });
+  }
+
+  // ─── THREE SETUP ─────────────────────────────────────
+  function setupThree(arMode) {
+    scene = new THREE.Scene();
+    camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 100);
+    renderer = new THREE.WebGLRenderer({
+      alpha: true, antialias: true,
+      canvas: arMode ? undefined : $previewCanvas
+    });
+    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    if (arMode) {
+      renderer.xr.enabled = true;
+      document.body.appendChild(renderer.domElement);
+      Object.assign(renderer.domElement.style, { position: 'fixed', inset: '0', zIndex: '5' });
+    }
+    const ambient = new THREE.AmbientLight(0xffffff, 0.9);
+    scene.add(ambient);
+    const dir = new THREE.DirectionalLight(0xffffff, 0.8);
+    dir.position.set(2, 5, 3);
+    scene.add(dir);
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+  }
+
+  // ─── RETICLE ─────────────────────────────────────────
+  function createReticle() {
+    const geo = new THREE.RingGeometry(0.08, 0.12, 32).rotateX(-Math.PI / 2);
+    const mat = new THREE.MeshBasicMaterial({ color: 0x4488ff, side: THREE.DoubleSide });
+    reticle = new THREE.Mesh(geo, mat);
+    reticle.matrixAutoUpdate = false;
+    reticle.visible = false;
+    scene.add(reticle);
+  }
+
+  // ─── LOAD SCAN ───────────────────────────────────────
+  async function loadScan() {
+    return new Promise((resolve) => {
+      const loader = new THREE.GLTFLoader();
+      loader.load(SCAN_URL, (gltf) => {
+        scanModel = gltf.scene;
+        scanModel.traverse(child => {
+          if (child.isMesh) {
+            // Mantener textura original pero semitransparente
+            child.material = child.material.clone();
+            child.material.transparent = true;
+            child.material.opacity = SCAN_OPACITY;
+          }
+        });
+        scanModel.visible = showScan;
+        resolve(scanModel);
+      }, undefined, (err) => {
+        console.warn('Scan no cargado:', err.message);
+        resolve(null);
+      });
+    });
+  }
+
+  // ─── ANCHOR GROUP ────────────────────────────────────
+  function createAnchorGroup() {
+    anchorGroup = new THREE.Group();
+    anchorGroup.visible = false;
+    scene.add(anchorGroup);
+
+    ANCLAS.forEach(a => {
+      if (a.tipo === 'grid') createGrid(a);
+      else if (a.tipo === 'bloque' || a.tipo === 'plano') createBloque(a);
+      else createInfoAnchor(a);
+    });
+  }
+
+  function createGrid(a) {
+    const group = new THREE.Group();
+    group.position.set(...a.pos);
+    const W = a.columnas * a.celda;
+    const H = a.filas * a.celda;
+    const mat = new THREE.LineBasicMaterial({ color: a.color, transparent: true, opacity: 0.5 });
+    for (let i = 0; i <= a.columnas; i++) {
+      const x = i * a.celda - W/2;
+      const g = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(x,0,-H/2), new THREE.Vector3(x,0,H/2)]);
+      group.add(new THREE.Line(g, mat));
+    }
+    for (let j = 0; j <= a.filas; j++) {
+      const z = j * a.celda - H/2;
+      const g = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(-W/2,0,z), new THREE.Vector3(W/2,0,z)]);
+      group.add(new THREE.Line(g, mat));
+    }
+    // Column labels
+    for (let i = 0; i < a.columnas; i++) {
+      const lbl = makeTextSprite(String(i+1), a.color, 0.14);
+      lbl.position.set(i*a.celda - W/2 + a.celda/2, 0.04, -H/2 - 0.14);
+      group.add(lbl);
+    }
+    const rows = 'ABCDEF';
+    for (let j = 0; j < a.filas; j++) {
+      const lbl = makeTextSprite(rows[j], a.color, 0.14);
+      lbl.position.set(-W/2 - 0.18, 0.04, j*a.celda - H/2 + a.celda/2);
+      group.add(lbl);
+    }
+    anchorGroup.add(group);
+  }
+
+  function createBloque(a) {
+    const group = new THREE.Group();
+    group.position.set(...a.pos);
+    const geo = new THREE.BoxGeometry(...a.escala);
+    const mat = new THREE.MeshStandardMaterial({ color: a.color, transparent: true, opacity: 0.3 });
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.position.y = a.escala[1]/2;
+    group.add(mesh);
+    const wire = new THREE.LineSegments(
+      new THREE.EdgesGeometry(geo),
+      new THREE.LineBasicMaterial({ color: a.color, transparent: true, opacity: 0.7 })
+    );
+    wire.position.y = a.escala[1]/2;
+    group.add(wire);
+    const bb = makeBillboard(a);
+    bb.position.y = a.escala[1] + 0.35;
+    group.add(bb);
+    group.userData.anclaId = a.id;
+    group.userData.info = a;
+    anchorGroup.add(group);
+  }
+
+  function createInfoAnchor(a) {
+    const group = new THREE.Group();
+    group.position.set(...a.pos);
+    // Sphere
+    const sphere = new THREE.Mesh(
+      new THREE.SphereGeometry(0.07, 16, 16),
+      new THREE.MeshStandardMaterial({ color: a.color, emissive: a.color, emissiveIntensity: 0.5 })
+    );
+    sphere.userData.float = true;
+    sphere.userData.floatOffset = Math.random() * Math.PI * 2;
+    group.add(sphere);
+    // Ring
+    const ring = new THREE.Mesh(
+      new THREE.RingGeometry(0.1, 0.13, 32).rotateX(-Math.PI/2),
+      new THREE.MeshBasicMaterial({ color: a.color, transparent: true, opacity: 0.5, side: THREE.DoubleSide })
+    );
+    ring.userData.pulse = true;
+    group.add(ring);
+    // Billboard
+    const bb = makeBillboard(a);
+    bb.position.y = 0.22;
+    group.add(bb);
+    group.userData.anclaId = a.id;
+    group.userData.info = a;
+    anchorGroup.add(group);
+  }
+
+  function makeBillboard(a) {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = 512; canvas.height = 180;
+    ctx.fillStyle = 'rgba(10,10,30,0.88)';
+    rr(ctx, 0, 0, 512, 180, 14); ctx.fill();
+    ctx.fillStyle = a.color;
+    rr(ctx, 0, 0, 7, 180, 4); ctx.fill();
+    ctx.font = '44px serif'; ctx.textBaseline = 'middle';
+    ctx.fillText(a.icono || '📍', 20, 50);
+    ctx.fillStyle = '#fff'; ctx.font = 'bold 24px sans-serif';
+    ctx.fillText(a.titulo, 74, 46);
+    ctx.fillStyle = 'rgba(255,255,255,0.65)'; ctx.font = '18px sans-serif';
+    wrapText(ctx, a.desc || '', 20, 100, 475, 24);
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.minFilter = THREE.LinearFilter;
+    const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false }));
+    sp.scale.set(1.1, 0.39, 1);
+    return sp;
+  }
+
+  function rr(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x+r,y); ctx.lineTo(x+w-r,y);
+    ctx.quadraticCurveTo(x+w,y,x+w,y+r); ctx.lineTo(x+w,y+h-r);
+    ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h); ctx.lineTo(x+r,y+h);
+    ctx.quadraticCurveTo(x,y+h,x,y+h-r); ctx.lineTo(x,y+r);
+    ctx.quadraticCurveTo(x,y,x+r,y); ctx.closePath();
+  }
+
+  function wrapText(ctx, text, x, y, maxW, lh) {
+    const words = text.split(' '); let line = '';
+    for (const w of words) {
+      const t = line + w + ' ';
+      if (ctx.measureText(t).width > maxW && line) { ctx.fillText(line.trim(), x, y); line = w + ' '; y += lh; }
+      else { line = t; }
+    }
+    ctx.fillText(line.trim(), x, y);
+  }
+
+  function makeTextSprite(txt, color, sz) {
+    const c = document.createElement('canvas'); c.width = 64; c.height = 64;
+    const ctx = c.getContext('2d');
+    ctx.fillStyle = color; ctx.font = 'bold 48px sans-serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(txt, 32, 32);
+    const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), transparent: true, depthTest: false }));
+    sp.scale.set(sz, sz, 1); return sp;
+  }
+
+  // ─── AR MODE ─────────────────────────────────────────
+  async function startAR() {
+    showLoading('Cargando scan Scaniverse...');
+    placed = false;
+    setupThree(true);
+    createReticle();
+    createAnchorGroup();
+
+    const scan = await loadScan();
+    if (scan) {
+      // El scan se añade al anchorGroup para moverse con él al colocarlo
+      anchorGroup.add(scan);
+    }
+
+    try {
+      xrSession = await navigator.xr.requestSession('immersive-ar', {
+        requiredFeatures: ['hit-test'],
+        optionalFeatures: ['dom-overlay'],
+        domOverlay: { root: $overlay }
+      });
+      renderer.xr.setReferenceSpaceType('local');
+      await renderer.xr.setSession(xrSession);
+      xrSession.addEventListener('end', onSessionEnd);
+      xrSession.addEventListener('select', onSelect);
+
+      $landing.style.display = 'none';
+      $overlay.classList.add('active');
+      $instruction.textContent = 'Apunta al suelo — toca para colocar el escaneo';
+      hideLoading();
+      renderer.setAnimationLoop(renderAR);
+    } catch(e) {
+      hideLoading();
+      $status.textContent = '❌ ' + e.message;
+    }
+  }
+
+  function onSelect() {
+    if (!reticle.visible) return;
+    if (!placed) {
+      // Place anchor group at reticle hit point
+      const pos = new THREE.Vector3();
+      const quat = new THREE.Quaternion();
+      const scale = new THREE.Vector3();
+      reticle.matrix.decompose(pos, quat, scale);
+      anchorGroup.position.copy(pos);
+      anchorGroup.quaternion.copy(quat);
+      anchorGroup.visible = showAnchors;
+      placed = true;
+      reticle.visible = false;
+      $instruction.textContent = '✅ Colocado — explora los hallazgos';
+      if (navigator.vibrate) navigator.vibrate(60);
+    }
+  }
+
+  function resetPlacement() {
+    placed = false;
+    anchorGroup.visible = false;
+    reticle.visible = false;
+    $instruction.textContent = 'Apunta al suelo — toca para colocar de nuevo';
+    hitTestSource = null;
+    hitTestSourceRequested = false;
+  }
+
+  function renderAR(timestamp, frame) {
+    if (!frame) return;
+    const refSpace = renderer.xr.getReferenceSpace();
+    const session = renderer.xr.getSession();
+
+    if (!placed) {
+      if (!hitTestSourceRequested) {
+        session.requestReferenceSpace('viewer').then(vs => {
+          session.requestHitTestSource({ space: vs }).then(src => { hitTestSource = src; });
+        });
+        hitTestSourceRequested = true;
+      }
+      if (hitTestSource) {
+        const hits = frame.getHitTestResults(hitTestSource);
+        if (hits.length > 0) {
+          const pose = hits[0].getPose(refSpace);
+          reticle.visible = true;
+          reticle.matrix.fromArray(pose.transform.matrix);
+        } else {
+          reticle.visible = false;
+        }
+      }
+    }
+
+    animateAnchors(timestamp);
+    renderer.render(scene, camera);
+  }
+
+  function onSessionEnd() {
+    xrSession = null; hitTestSource = null; hitTestSourceRequested = false; placed = false;
+    $overlay.classList.remove('active');
+    $landing.style.display = '';
+    if (renderer?.domElement?.parentNode) renderer.domElement.parentNode.removeChild(renderer.domElement);
+    renderer = null; scene = null;
+  }
+
+  function exitAR() { if (xrSession) xrSession.end(); }
+
+  // ─── PREVIEW MODE ────────────────────────────────────
+  async function startPreview() {
+    isPreviewMode = true;
+    $landing.style.display = 'none';
+    $previewCanvas.classList.add('active');
+    $btnBack.classList.add('active');
+    showLoading('Cargando preview...');
+
+    setupThree(false);
+    createAnchorGroup();
+    anchorGroup.visible = true;
+
+    const scan = await loadScan();
+    if (scan) {
+      scan.visible = true;
+      anchorGroup.add(scan);
+    }
+
+    // Ground
+    const ground = new THREE.Mesh(
+      new THREE.PlaneGeometry(12, 12),
+      new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.95 })
+    );
+    ground.rotation.x = -Math.PI/2;
+    ground.position.y = -0.01;
+    scene.add(ground);
+
+    camera.position.set(4, 3, 5);
+    camera.lookAt(0, 0.5, 0);
+
+    hideLoading();
+    let angle = 0;
+    function animate(t) {
+      if (!isPreviewMode) return;
+      requestAnimationFrame(animate);
+      angle += 0.003;
+      camera.position.x = Math.cos(angle) * 5;
+      camera.position.z = Math.sin(angle) * 5;
+      camera.position.y = 3 + Math.sin(angle * 0.4) * 0.5;
+      camera.lookAt(0, 0.5, 0);
+      animateAnchors(t);
+      renderer.render(scene, camera);
+    }
+    requestAnimationFrame(animate);
+  }
+
+  function exitPreview() {
+    isPreviewMode = false;
+    $previewCanvas.classList.remove('active');
+    $btnBack.classList.remove('active');
+    $landing.style.display = '';
+    scene = null; renderer = null;
+  }
+
+  // ─── ANIMATIONS ──────────────────────────────────────
+  function animateAnchors(ts) {
+    if (!anchorGroup) return;
+    const t = ts * 0.001;
+    anchorGroup.traverse(child => {
+      if (child.userData.float) {
+        const off = child.userData.floatOffset || 0;
+        child.position.y = Math.sin(t * 1.5 + off) * 0.025;
+      }
+      if (child.userData.pulse) {
+        const s = 1 + Math.sin(t * 2) * 0.15;
+        child.scale.set(s, s, s);
+        child.material.opacity = 0.3 + Math.sin(t * 2) * 0.2;
+      }
+    });
+  }
+
+  function showLoading(msg) { $loadingMsg.textContent = msg || 'Cargando...'; $loading.classList.add('active'); }
+  function hideLoading() { $loading.classList.remove('active'); }
+
+  init();
+  </script>
+</body>
+</html>

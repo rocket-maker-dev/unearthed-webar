@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>UNEARTHED — Excavación AR</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #080810; color: #fff; font-family: system-ui, sans-serif; overflow: hidden; height: 100vh; }
+
+    /* ── LANDING ── */
+    #landing {
+      position: fixed; inset: 0; z-index: 30; background: #080810;
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; padding: 28px; text-align: center; gap: 16px;
+    }
+    #landing h1 { font-size: 2rem; letter-spacing: 3px; }
+    #landing .sub { color: #8899bb; font-size: 0.85rem; margin-top: -8px; }
+    .card {
+      background: #0e1228; border: 1px solid #2244cc33; border-radius: 14px;
+      padding: 14px 20px; font-size: 0.8rem; color: #8899cc; line-height: 1.7;
+      width: 100%; max-width: 340px; text-align: left;
+    }
+    .card b { color: #aabbff; }
+    .btn-primary {
+      background: #2244cc; color: #fff; border: none; border-radius: 16px;
+      padding: 18px 40px; font-size: 1.1rem; cursor: pointer; width: 100%; max-width: 300px;
+    }
+    .btn-primary:disabled { background: #222; color: #555; }
+    #status-msg { font-size: 0.8rem; color: #aaa; }
+
+    /* ── AR UI ── */
+    #ar-ui { display: none; position: fixed; inset: 0; z-index: 10; pointer-events: none; }
+
+    /* Top */
+    #hud-top {
+      position: absolute; top: 0; left: 0; right: 0; pointer-events: all;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 16px;
+      background: linear-gradient(to bottom, rgba(0,0,0,0.7), transparent);
+    }
+    #hud-title { font-size: 0.85rem; font-weight: 700; letter-spacing: 1px; }
+    .hud-badge {
+      font-size: 0.7rem; background: rgba(34,68,204,0.7); border-radius: 8px;
+      padding: 4px 10px; color: #aaccff;
+    }
+    #btn-exit { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #fff; border-radius: 8px; padding: 7px 14px; cursor: pointer; font-size: 0.82rem; }
+
+    /* Phase banner */
+    #phase {
+      position: absolute; top: 62px; left: 50%; transform: translateX(-50%);
+      background: rgba(8,16,48,0.92); border: 1px solid #4466ff66;
+      border-radius: 20px; padding: 8px 22px; font-size: 0.8rem; color: #aaccff;
+      white-space: nowrap; pointer-events: none;
+    }
+
+    /* Crosshair / reticle */
+    #reticle-hint {
+      position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+      width: 64px; height: 64px; display: none;
+    }
+    #reticle-hint::before, #reticle-hint::after {
+      content: ''; position: absolute; background: rgba(80,180,255,0.85);
+    }
+    #reticle-hint::before { width: 1px; height: 100%; left: 50%; }
+    #reticle-hint::after  { height: 1px; width: 100%; top: 50%; }
+    .rh-ring {
+      position: absolute; inset: 10px;
+      border: 2px solid rgba(80,180,255,0.7); border-radius: 50%;
+      animation: pulse-rh 1.4s ease-in-out infinite;
+    }
+    @keyframes pulse-rh { 0%,100% { opacity:.8; transform:scale(1); } 50% { opacity:.3; transform:scale(1.15); } }
+
+    /* Origin marker (after first tap) */
+    #origin-indicator {
+      position: absolute; top: 50%; left: 50%;
+      transform: translate(-50%,-50%);
+      font-size: 1.8rem; display: none; pointer-events: none;
+      filter: drop-shadow(0 0 8px rgba(0,255,120,0.8));
+      animation: bob 2s ease-in-out infinite;
+    }
+    @keyframes bob { 0%,100%{transform:translate(-50%,-52%)} 50%{transform:translate(-50%,-48%)} }
+
+    /* Controls */
+    #controls {
+      position: absolute; bottom: 110px; left: 50%; transform: translateX(-50%);
+      display: none; flex-direction: column; align-items: center; gap: 10px;
+      pointer-events: all;
+    }
+    #controls.show { display: flex; }
+    .ctrl-row { display: flex; gap: 10px; }
+    .ctrl-btn {
+      background: rgba(8,16,48,0.92); border: 1px solid #4466ff55;
+      color: #fff; border-radius: 12px; padding: 12px 20px; font-size: 0.9rem;
+      cursor: pointer; -webkit-tap-highlight-color: transparent;
+    }
+    .ctrl-btn:active { background: rgba(34,68,204,0.9); }
+    #btn-place {
+      background: #00aa55; border: none; border-radius: 16px;
+      padding: 16px 36px; font-size: 1.05rem; color: #fff;
+      cursor: pointer; box-shadow: 0 4px 20px rgba(0,170,85,0.5);
+      -webkit-tap-highlight-color: transparent;
+    }
+    #btn-reset-pos {
+      background: rgba(180,60,30,0.85); border: 1px solid #ff6633;
+      color: #fff; border-radius: 12px; padding: 10px 18px; font-size: 0.82rem;
+      cursor: pointer; display: none;
+    }
+
+    /* Bottom */
+    #hud-bottom {
+      position: absolute; bottom: 0; left: 0; right: 0; pointer-events: none;
+      padding: 20px; text-align: center;
+      background: linear-gradient(to top, rgba(0,0,0,0.65), transparent);
+    }
+    #instruction { font-size: 0.9rem; color: #eee; }
+
+    /* Info panel */
+    #info-panel {
+      display: none; position: fixed; bottom: 90px; left: 14px; right: 14px;
+      z-index: 40; background: rgba(4,6,20,0.96); border-radius: 18px;
+      padding: 20px; pointer-events: all;
+    }
+    #info-panel.show { display: block; }
+    #info-border { position: absolute; left: 0; top: 0; bottom: 0; width: 5px; border-radius: 18px 0 0 18px; }
+    #info-emoji { font-size: 2rem; float: left; margin-right: 12px; line-height: 1; }
+    #info-titulo { font-size: 1rem; font-weight: 700; margin-bottom: 3px; }
+    #info-periodo { font-size: 0.72rem; color: #7799cc; margin-bottom: 10px; }
+    #info-desc { font-size: 0.82rem; color: #ccc; line-height: 1.55; clear: both; }
+    #btn-close-info { position: absolute; top: 14px; right: 14px; background: none; border: none; color: #666; font-size: 1.2rem; cursor: pointer; }
+
+    /* Loading */
+    #loading { display: none; position: fixed; inset: 0; z-index: 50; background: rgba(0,0,0,0.8); align-items: center; justify-content: center; flex-direction: column; gap: 14px; }
+    #loading.show { display: flex; }
+    .spinner { width: 44px; height: 44px; border: 3px solid #222; border-top-color: #4466ff; border-radius: 50%; animation: spin .8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+
+<!-- LANDING -->
+<div id="landing">
+  <h1>⛏️ UNEARTHED</h1>
+  <p class="sub">Sistema AR para excavaciones arqueológicas</p>
+  <div class="card">
+    <b>Cómo funciona:</b><br>
+    1. Apunta al suelo de la excavación<br>
+    2. Coloca el origen (esquina A1 de la cuadrícula)<br>
+    3. Los hallazgos aparecen anclados al espacio real<br>
+    4. Muévete libremente — los objetos no se mueven
+  </div>
+  <button class="btn-primary" id="btn-ar" disabled>🔭 Iniciar AR</button>
+  <p id="status-msg">Comprobando ARCore...</p>
+</div>
+
+<!-- AR UI -->
+<div id="ar-ui">
+  <div id="hud-top">
+    <span id="hud-title">⛏️ UNEARTHED</span>
+    <span class="hud-badge" id="tracking-badge">Buscando...</span>
+    <button id="btn-exit">✕</button>
+  </div>
+  <div id="phase"></div>
+  <div id="reticle-hint"><div class="rh-ring"></div></div>
+  <div id="origin-indicator">📍</div>
+
+  <div id="controls">
+    <div class="ctrl-row">
+      <button class="ctrl-btn" id="rot-left">↺ Rotar</button>
+      <button class="ctrl-btn" id="rot-right">Rotar ↻</button>
+    </div>
+    <button id="btn-place">✅ Confirmar origen aquí</button>
+    <button id="btn-reset-pos">↺ Mover origen</button>
+  </div>
+
+  <div id="hud-bottom">
+    <span id="instruction">Mueve el móvil lentamente sobre el suelo</span>
+  </div>
+</div>
+
+<!-- Info panel -->
+<div id="info-panel">
+  <div id="info-border"></div>
+  <button id="btn-close-info">✕</button>
+  <div id="info-emoji"></div>
+  <div id="info-titulo"></div>
+  <div id="info-periodo"></div>
+  <div id="info-desc"></div>
+</div>
+
+<!-- Loading -->
+<div id="loading"><div class="spinner"></div><p id="loading-msg">Iniciando...</p></div>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/js/loaders/GLTFLoader.js"></script>
+<script>
+// ═══════════════════════════════════════════════════════════
+// DATOS DEL YACIMIENTO
+// Coordenadas en metros relativas al origen (esquina A1)
+// El origen se coloca físicamente en la esquina de la cuadrícula
+// ═══════════════════════════════════════════════════════════
+const HALLAZGOS = [
+  {
+    id: 'ceramica', x: 1.5, y: 0, z: -1.0, ry: 0,
+    titulo: 'Cerámica Terra Sigillata', periodo: 'Romano · s. II d.C.',
+    desc: 'Fragmentos de cerámica de lujo importada del Mediterráneo. Indican actividad comercial en el asentamiento.',
+    emoji: '🏺', color: '#e74c3c', tipo: 'panel'
+  },
+  {
+    id: 'mosaico', x: 0, y: 0, z: 0, ry: 0,
+    titulo: 'Mosaico del Triclinium', periodo: 'Romano · s. II a.C.',
+    desc: 'Suelo decorado con teselas blancas y negras. Era el comedor de una villa romana de cierto rango.',
+    emoji: '🎨', color: '#f39c12', tipo: 'plano', sx: 2.0, sy: 0.04, sz: 1.5
+  },
+  {
+    id: 'tumba', x: -2.0, y: 0, z: 1.5, ry: 45,
+    titulo: 'Enterramiento Medieval', periodo: 'Medieval · s. XII',
+    desc: 'Tumba de lajas de piedra orientada este-oeste según el ritual cristiano. Pertenece a la necrópolis del siglo XII.',
+    emoji: '⚱️', color: '#9b59b6', tipo: 'panel'
+  },
+  {
+    id: 'muralla', x: -3.5, y: 0, z: 0, ry: 0,
+    titulo: 'Muralla del Castro', periodo: 'Prerromano · s. V a.C.',
+    desc: 'Base de la muralla perimetral construida con bloques de granito sin argamasa. Protegía el poblado castreño.',
+    emoji: '🏰', color: '#2ecc71', tipo: 'bloque', sx: 0.4, sy: 1.8, sz: 4.0
+  },
+  {
+    id: 'hogar', x: 2.5, y: 0, z: 2.0, ry: -30,
+    titulo: 'Hogar Prehistórico', periodo: 'Bronce Final · ~900 a.C.',
+    desc: 'Restos de estructura de combustión con cenizas y carbones. Datación C14: circa 900 a.C. Posible área de cocina.',
+    emoji: '🔥', color: '#e67e22', tipo: 'panel'
+  },
+  {
+    id: 'grid', x: 0, y: 0, z: 0, ry: 0,
+    titulo: '', periodo: '', desc: '',
+    emoji: '', color: '#3498db', tipo: 'grid', filas: 4, cols: 12, celda: 0.5
+  }
+];
+
+// ═══════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════
+let renderer, scene, camera;
+let xrSession = null, hitTestSource = null, hitTestSourceRequested = false;
+let reticle, worldRoot;  // worldRoot = grupo anclado al mundo real
+let originPlaced = false, confirmed = false;
+let originRotY = 0;
+
+// ═══════════════════════════════════════════════════════════
+// DOM
+// ═══════════════════════════════════════════════════════════
+const $ = id => document.getElementById(id);
+const $landing    = $('landing');
+const $arUi       = $('ar-ui');
+const $phase      = $('phase');
+const $reticleHint= $('reticle-hint');
+const $originInd  = $('origin-indicator');
+const $controls   = $('controls');
+const $instruction= $('instruction');
+const $btnAr      = $('btn-ar');
+const $btnExit    = $('btn-exit');
+const $btnPlace   = $('btn-place');
+const $btnReset   = $('btn-reset-pos');
+const $trackBadge = $('tracking-badge');
+const $infoPanel  = $('info-panel');
+
+// ═══════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════
+async function init() {
+  if (navigator.xr) {
+    try {
+      const ok = await navigator.xr.isSessionSupported('immersive-ar');
+      $btnAr.disabled = !ok;
+      $('status-msg').textContent = ok
+        ? '✅ ARCore disponible — listo'
+        : '⚠️ ARCore no disponible en este dispositivo';
+    } catch {
+      $btnAr.disabled = true;
+      $('status-msg').textContent = '⚠️ WebXR no disponible';
+    }
+  } else {
+    $btnAr.disabled = true;
+    $('status-msg').textContent = '⚠️ Abre en Chrome Android';
+  }
+
+  $btnAr.addEventListener('click', startAR);
+  $btnExit.addEventListener('click', () => xrSession?.end());
+  $btnPlace.addEventListener('click', confirmOrigin);
+  $btnReset.addEventListener('click', resetOrigin);
+  $('btn-close-info').addEventListener('click', () => $infoPanel.classList.remove('show'));
+  $('rot-left').addEventListener('click',  () => { originRotY -= Math.PI/12; if (worldRoot) worldRoot.rotation.y = originRotY; });
+  $('rot-right').addEventListener('click', () => { originRotY += Math.PI/12; if (worldRoot) worldRoot.rotation.y = originRotY; });
+}
+
+// ═══════════════════════════════════════════════════════════
+// THREE SETUP
+// ═══════════════════════════════════════════════════════════
+function setupThree() {
+  scene = new THREE.Scene();
+  camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 200);
+
+  renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.xr.enabled = true;
+  document.body.appendChild(renderer.domElement);
+  Object.assign(renderer.domElement.style, { position: 'fixed', inset: '0', zIndex: '5' });
+
+  scene.add(new THREE.AmbientLight(0xffffff, 0.9));
+  const dir = new THREE.DirectionalLight(0xffffff, 0.8);
+  dir.position.set(2, 5, 3);
+  scene.add(dir);
+
+  window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+// RETICLE
+// ═══════════════════════════════════════════════════════════
+function createReticle() {
+  // Círculo plano en el suelo
+  const geo = new THREE.RingGeometry(0.06, 0.10, 36).rotateX(-Math.PI / 2);
+  const mat = new THREE.MeshBasicMaterial({ color: 0x44aaff, side: THREE.DoubleSide });
+  reticle = new THREE.Mesh(geo, mat);
+  reticle.matrixAutoUpdate = false;
+  reticle.visible = false;
+  scene.add(reticle);
+
+  // Cruz en el centro del reticle
+  const crossMat = new THREE.LineBasicMaterial({ color: 0xffffff });
+  const cross = new THREE.Group();
+  [[[-0.03,0,0],[0.03,0,0]], [[0,0,-0.03],[0,0,0.03]]].forEach(pts => {
+    cross.add(new THREE.Line(
+      new THREE.BufferGeometry().setFromPoints(pts.map(p => new THREE.Vector3(...p))),
+      crossMat
+    ));
+  });
+  cross.matrixAutoUpdate = false;
+  cross.name = 'reticle-cross';
+  reticle.add(cross);
+}
+
+// ═══════════════════════════════════════════════════════════
+// WORLD ROOT + HALLAZGOS
+// ═══════════════════════════════════════════════════════════
+function createWorldRoot() {
+  worldRoot = new THREE.Group();
+  worldRoot.visible = false;
+  scene.add(worldRoot);
+
+  // Marcador de origen
+  const originGeo = new THREE.CylinderGeometry(0.02, 0.02, 0.3, 8);
+  const originMesh = new THREE.Mesh(originGeo, new THREE.MeshBasicMaterial({ color: 0x00ff88 }));
+  originMesh.position.y = 0.15;
+  originMesh.name = 'origin-marker';
+  worldRoot.add(originMesh);
+
+  const originRing = new THREE.Mesh(
+    new THREE.RingGeometry(0.08, 0.12, 32).rotateX(-Math.PI / 2),
+    new THREE.MeshBasicMaterial({ color: 0x00ff88, side: THREE.DoubleSide, transparent: true, opacity: 0.7 })
+  );
+  worldRoot.add(originRing);
+
+  // Etiqueta A1 en el origen
+  const lbl = makeTextSprite('A1', '#00ff88', 0.2);
+  lbl.position.set(0, 0.42, 0);
+  worldRoot.add(lbl);
+
+  // Hallazgos (ocultos hasta confirmar)
+  HALLAZGOS.forEach(h => {
+    let obj;
+    if (h.tipo === 'panel')  obj = buildPanel(h);
+    if (h.tipo === 'plano' || h.tipo === 'bloque') obj = buildBloque(h);
+    if (h.tipo === 'grid')   obj = buildGrid(h);
+    if (obj) {
+      obj.visible = false;
+      worldRoot.add(obj);
+    }
+  });
+}
+
+function showHallazgos() {
+  worldRoot.children.forEach(c => {
+    if (!c.name.startsWith('origin-') && c.name !== 'A1-label') c.visible = true;
+  });
+  // Ocultar marcador de origen
+  worldRoot.children.forEach(c => {
+    if (c.name === 'origin-marker') c.visible = false;
+  });
+}
+
+// ── Builders ──
+function buildPanel(h) {
+  const g = new THREE.Group();
+  g.position.set(h.x, h.y, h.z);
+  g.rotation.y = h.ry * Math.PI / 180;
+
+  // Esfera luminosa
+  const sphere = new THREE.Mesh(
+    new THREE.SphereGeometry(0.10, 20, 20),
+    new THREE.MeshStandardMaterial({ color: h.color, emissive: h.color, emissiveIntensity: 0.7 })
+  );
+  sphere.userData.float = true;
+  sphere.userData.off = Math.random() * Math.PI * 2;
+  g.add(sphere);
+
+  // Ring pulsante
+  const ring = new THREE.Mesh(
+    new THREE.TorusGeometry(0.16, 0.018, 8, 32),
+    new THREE.MeshBasicMaterial({ color: h.color, transparent: true, opacity: 0.6 })
+  );
+  ring.rotation.x = Math.PI / 2;
+  ring.userData.pulse = true;
+  g.add(ring);
+
+  // Billboard info
+  const bb = makeBillboard(h);
+  bb.position.y = 0.38;
+  g.add(bb);
+
+  g.userData.hallazgo = h;
+  return g;
+}
+
+function buildBloque(h) {
+  const g = new THREE.Group();
+  g.position.set(h.x, h.y, h.z);
+  g.rotation.y = h.ry * Math.PI / 180;
+  const dims = [h.sx||0.5, h.sy||1.0, h.sz||0.5];
+  const geo = new THREE.BoxGeometry(...dims);
+  const mesh = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ color: h.color, transparent: true, opacity: 0.35 }));
+  mesh.position.y = dims[1] / 2;
+  g.add(mesh);
+  const wire = new THREE.LineSegments(
+    new THREE.EdgesGeometry(geo),
+    new THREE.LineBasicMaterial({ color: h.color, opacity: 0.9, transparent: true })
+  );
+  wire.position.y = dims[1] / 2;
+  g.add(wire);
+  if (h.titulo) {
+    const bb = makeBillboard(h);
+    bb.position.set(0, dims[1] + 0.3, 0);
+    g.add(bb);
+  }
+  g.userData.hallazgo = h;
+  return g;
+}
+
+function buildGrid(h) {
+  const g = new THREE.Group();
+  g.position.set(h.x, h.y + 0.005, h.z);
+  const W = h.cols * h.celda, D = h.filas * h.celda;
+  const mat = new THREE.LineBasicMaterial({ color: h.color, transparent: true, opacity: 0.35 });
+  for (let i = 0; i <= h.cols; i++) {
+    const x = i * h.celda;
+    g.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(x,0,0), new THREE.Vector3(x,0,-D)]), mat));
+  }
+  for (let j = 0; j <= h.filas; j++) {
+    const z = -j * h.celda;
+    g.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,0,z), new THREE.Vector3(W,0,z)]), mat));
+  }
+  // Letras de columnas (1-12)
+  for (let i = 0; i < h.cols; i++) {
+    const lbl = makeTextSprite(String(i+1), '#3498db', 0.12);
+    lbl.position.set(i * h.celda + h.celda/2, 0.08, 0.12);
+    g.add(lbl);
+  }
+  // Letras de filas (A-D)
+  'ABCD'.split('').forEach((l, j) => {
+    const lbl = makeTextSprite(l, '#3498db', 0.12);
+    lbl.position.set(-0.12, 0.08, -j * h.celda - h.celda/2);
+    g.add(lbl);
+  });
+  return g;
+}
+
+// ── Sprites ──
+function makeBillboard(h) {
+  const c = document.createElement('canvas');
+  c.width = 512; c.height = 200;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = 'rgba(4,6,20,0.92)'; rrect(ctx,0,0,512,200,14); ctx.fill();
+  ctx.fillStyle = h.color; rrect(ctx,0,0,7,200,4); ctx.fill();
+  if (h.emoji) { ctx.font='42px serif'; ctx.textBaseline='middle'; ctx.fillText(h.emoji,16,52); }
+  ctx.fillStyle='#fff'; ctx.font='bold 23px system-ui'; ctx.textBaseline='middle';
+  ctx.fillText(h.titulo, h.emoji?68:16, 46);
+  ctx.fillStyle = h.color; ctx.font = '16px system-ui'; ctx.fillText(h.periodo, h.emoji?68:16, 78);
+  ctx.fillStyle='rgba(255,255,255,0.68)'; ctx.font='15px system-ui';
+  wrapText(ctx, h.desc, 14, 108, 490, 20);
+  const tex = new THREE.CanvasTexture(c);
+  tex.minFilter = THREE.LinearFilter;
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false }));
+  sp.scale.set(1.3, 0.51, 1);
+  return sp;
+}
+
+function makeTextSprite(txt, color, sz) {
+  const c = document.createElement('canvas'); c.width=128; c.height=64;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle=color; ctx.font='bold 46px system-ui';
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText(txt, 64, 32);
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), transparent: true, depthTest: false }));
+  sp.scale.set(sz*2, sz, 1); return sp;
+}
+
+function rrect(ctx,x,y,w,h,r) {
+  ctx.beginPath(); ctx.moveTo(x+r,y); ctx.lineTo(x+w-r,y); ctx.quadraticCurveTo(x+w,y,x+w,y+r); ctx.lineTo(x+w,y+h-r); ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h); ctx.lineTo(x+r,y+h); ctx.quadraticCurveTo(x,y+h,x,y+h-r); ctx.lineTo(x,y+r); ctx.quadraticCurveTo(x,y,x+r,y); ctx.closePath();
+}
+function wrapText(ctx, text, x, y, maxW, lh) {
+  if (!text) return;
+  const words = text.split(' '); let line = '';
+  for (const w of words) {
+    const t = line + w + ' ';
+    if (ctx.measureText(t).width > maxW && line) { ctx.fillText(line.trim(), x, y); line = w+' '; y += lh; }
+    else line = t;
+  }
+  ctx.fillText(line.trim(), x, y);
+}
+
+// ═══════════════════════════════════════════════════════════
+// AR SESSION
+// ═══════════════════════════════════════════════════════════
+async function startAR() {
+  showLoading('Iniciando ARCore...');
+  originPlaced = false; confirmed = false; originRotY = 0;
+
+  setupThree();
+  createReticle();
+  createWorldRoot();
+
+  try {
+    xrSession = await navigator.xr.requestSession('immersive-ar', {
+      requiredFeatures: ['hit-test'],
+      optionalFeatures: ['dom-overlay', 'local-floor'],
+      domOverlay: { root: document.body }
+    });
+
+    renderer.xr.setReferenceSpaceType('local-floor');
+    await renderer.xr.setSession(xrSession);
+    xrSession.addEventListener('end', onSessionEnd);
+    xrSession.addEventListener('select', onSelect);
+
+    $landing.style.display = 'none';
+    $arUi.style.display = 'block';
+    $reticleHint.style.display = 'block';
+    setPhase('📍 Apunta al suelo de la excavación');
+    setInstruction('Mueve el móvil lentamente sobre el suelo');
+
+    hideLoading();
+    renderer.setAnimationLoop(renderAR);
+  } catch(e) {
+    hideLoading();
+    $('status-msg').textContent = '❌ Error: ' + e.message;
+    if (renderer?.domElement?.parentNode) renderer.domElement.parentNode.removeChild(renderer.domElement);
+    renderer = null; scene = null;
+  }
+}
+
+// ── Select (tap) ──
+function onSelect() {
+  if (confirmed) {
+    // Tras confirmar: raycasting para abrir info de hallazgos
+    // (el tap en AR con dom-overlay no da coordenadas precisas; simplest: skip)
+    return;
+  }
+
+  if (!reticle.visible) return;
+
+  if (!originPlaced) {
+    // Colocar worldRoot en el punto del reticle
+    const pos = new THREE.Vector3(), quat = new THREE.Quaternion(), sc = new THREE.Vector3();
+    reticle.matrix.decompose(pos, quat, sc);
+    worldRoot.position.copy(pos);
+    worldRoot.rotation.set(0, originRotY, 0);
+    worldRoot.visible = true;
+    originPlaced = true;
+    reticle.visible = false;
+    $reticleHint.style.display = 'none';
+
+    setPhase('🔄 Gira el grupo para alinear con la cuadrícula');
+    setInstruction('Usa ↺ ↻ para orientar · Luego confirma');
+    $controls.classList.add('show');
+    $btnReset.style.display = 'none';
+    if (navigator.vibrate) navigator.vibrate(50);
+  }
+}
+
+function confirmOrigin() {
+  confirmed = true;
+  $controls.classList.remove('show');
+  $btnReset.style.display = 'inline-block';
+  setPhase('🏺 ¡Excavación activa!');
+  setInstruction('Muévete alrededor — los hallazgos están anclados al yacimiento');
+  showHallazgos();
+  if (navigator.vibrate) navigator.vibrate([60, 30, 120]);
+}
+
+function resetOrigin() {
+  confirmed = false;
+  originPlaced = false;
+  worldRoot.visible = false;
+  $controls.classList.remove('show');
+  $btnReset.style.display = 'none';
+  $reticleHint.style.display = 'block';
+  setPhase('📍 Apunta al suelo para colocar de nuevo');
+  setInstruction('Toca el suelo para colocar el origen');
+  // Ocultar hallazgos
+  worldRoot.children.forEach(c => { c.visible = false; });
+}
+
+// ── Render loop ──
+function renderAR(ts, frame) {
+  if (!frame) return;
+  const refSpace = renderer.xr.getReferenceSpace();
+  const session  = renderer.xr.getSession();
+
+  // Hit test
+  if (!originPlaced) {
+    if (!hitTestSourceRequested) {
+      session.requestReferenceSpace('viewer').then(vs => {
+        session.requestHitTestSource({ space: vs }).then(src => {
+          hitTestSource = src;
+          $reticleHint.style.display = 'none';
+        });
+      });
+      hitTestSourceRequested = true;
+    }
+    if (hitTestSource) {
+      const hits = frame.getHitTestResults(hitTestSource);
+      if (hits.length > 0) {
+        const pose = hits[0].getPose(refSpace);
+        reticle.visible = true;
+        reticle.matrix.fromArray(pose.transform.matrix);
+        setInstruction('Superficie detectada — toca para colocar origen');
+        $trackBadge.textContent = '🟢 Tracking';
+      } else {
+        reticle.visible = false;
+        setInstruction('Mueve el móvil lentamente sobre el suelo');
+        $trackBadge.textContent = '🔍 Buscando...';
+      }
+    }
+  } else {
+    $trackBadge.textContent = '🟢 Anclado';
+  }
+
+  // Actualizar orientación del worldRoot live durante alineación
+  if (originPlaced && !confirmed) {
+    worldRoot.rotation.y = originRotY;
+  }
+
+  // Animaciones
+  const t = ts * 0.001;
+  if (worldRoot?.visible) {
+    worldRoot.traverse(c => {
+      if (c.userData.float) {
+        if (c._baseY === undefined) c._baseY = c.position.y;
+        c.position.y = c._baseY + Math.sin(t * 1.8 + (c.userData.off || 0)) * 0.03;
+      }
+      if (c.userData.pulse && c.material) {
+        const s = 1 + Math.sin(t * 2.5) * 0.14;
+        c.scale.set(s, s, s);
+        c.material.opacity = 0.4 + Math.sin(t * 2.5) * 0.25;
+      }
+    });
+  }
+
+  renderer.render(scene, camera);
+}
+
+function onSessionEnd() {
+  xrSession = null; hitTestSource = null; hitTestSourceRequested = false;
+  originPlaced = false; confirmed = false;
+  $arUi.style.display = 'none';
+  $controls.classList.remove('show');
+  $btnReset.style.display = 'none';
+  $landing.style.display = 'flex';
+  $infoPanel.classList.remove('show');
+  if (renderer?.domElement?.parentNode) renderer.domElement.parentNode.removeChild(renderer.domElement);
+  renderer = null; scene = null;
+}
+
+// ═══════════════════════════════════════════════════════════
+// UI
+// ═══════════════════════════════════════════════════════════
+function setPhase(txt) { $phase.textContent = txt; }
+function setInstruction(txt) { $instruction.textContent = txt; }
+function showLoading(msg) { $('loading-msg').textContent = msg; $loading.classList.add('show'); }
+function hideLoading() { $('loading').classList.remove('show'); }
+const $loading = $('loading');
+
+init();
+</script>
+</body>
+</html>

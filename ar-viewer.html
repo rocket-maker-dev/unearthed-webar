@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UNEARTHED — AR Scan</title>
+  <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #0a0a1a; color: #fff; font-family: sans-serif; min-height: 100vh; }
+
+    header {
+      padding: 16px 20px;
+      background: linear-gradient(135deg, #0d1117 0%, #1a1a3a 100%);
+      border-bottom: 1px solid #2244cc44;
+      display: flex; align-items: center; gap: 12px;
+    }
+    header h1 { font-size: 1.1rem; }
+    header .badge {
+      margin-left: auto; font-size: 0.72rem; color: #7799ff;
+      background: #1a2a5a; border-radius: 6px; padding: 4px 10px;
+    }
+
+    .info-bar {
+      background: #111128; padding: 10px 20px;
+      font-size: 0.78rem; color: #8899cc;
+      display: flex; gap: 20px; flex-wrap: wrap;
+    }
+    .info-bar span b { color: #aabbff; }
+
+    model-viewer {
+      width: 100%;
+      height: calc(100vh - 130px);
+      background: transparent;
+      --poster-color: transparent;
+    }
+
+    /* AR button styling */
+    model-viewer::part(default-ar-button) {
+      bottom: 24px;
+      right: 24px;
+      background: #2244cc;
+      border-radius: 50px;
+      padding: 12px 24px;
+      font-size: 1rem;
+    }
+
+    .overlay-info {
+      position: absolute;
+      bottom: 80px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(10,10,30,0.85);
+      border: 1px solid #4466ff44;
+      border-radius: 12px;
+      padding: 10px 18px;
+      font-size: 0.78rem;
+      color: #aabbff;
+      text-align: center;
+      white-space: nowrap;
+      pointer-events: none;
+    }
+
+    .no-ar-msg {
+      display: none;
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #1a1a1a;
+      border: 1px solid #444;
+      border-radius: 10px;
+      padding: 10px 18px;
+      font-size: 0.8rem;
+      color: #aaa;
+      text-align: center;
+    }
+
+    .viewer-wrap { position: relative; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <span>⛏️</span>
+    <h1>UNEARTHED — Scan AR</h1>
+    <span class="badge">Scaniverse · 2026-03-02</span>
+  </header>
+
+  <div class="info-bar">
+    <span>📐 <b>2.89 × 1.91 × 1.14 m</b></span>
+    <span>☁️ <b>1.098</b> puntos</span>
+    <span>📷 Textura fotogramétrica</span>
+    <span>🔘 Toca el botón AR para colocarlo en el espacio</span>
+  </div>
+
+  <div class="viewer-wrap">
+    <model-viewer
+      id="viewer"
+      src="https://espaciovivo.gal/unearthed/models/escaneo-scaniverse.glb"
+      alt="Escaneo 3D Scaniverse del espacio de excavación"
+      ar
+      ar-modes="quick-look webxr scene-viewer"
+      ar-scale="fixed"
+      camera-controls
+      touch-action="pan-y"
+      auto-rotate
+      auto-rotate-delay="2000"
+      rotation-per-second="15deg"
+      environment-image="neutral"
+      shadow-intensity="1"
+      exposure="1.1"
+      camera-orbit="45deg 70deg 4m"
+      min-camera-orbit="auto auto 1m"
+      max-camera-orbit="auto auto 8m"
+      loading="eager"
+    >
+      <!-- Custom AR button -->
+      <button slot="ar-button" style="
+        position: absolute; bottom: 24px; right: 24px;
+        background: #2244cc; color: white; border: none;
+        border-radius: 50px; padding: 14px 28px;
+        font-size: 1rem; cursor: pointer;
+        box-shadow: 0 4px 20px #2244cc88;
+        display: flex; align-items: center; gap: 8px;
+      ">
+        📱 Ver en AR
+      </button>
+
+      <!-- Hotspots / puntos de interés -->
+      <button class="hotspot" slot="hotspot-ceramica"
+        data-position="-0.8m 0.5m -0.2m"
+        data-normal="0 1 0"
+        data-visibility-attribute="visible"
+        style="background:#e74c3c; border:none; border-radius:50%; width:28px; height:28px; cursor:pointer; color:white; font-size:14px;"
+        title="Cerámica Romana (s. II d.C.)">🏺</button>
+
+      <button class="hotspot" slot="hotspot-mosaico"
+        data-position="0m 0.1m 0m"
+        data-normal="0 1 0"
+        data-visibility-attribute="visible"
+        style="background:#f39c12; border:none; border-radius:50%; width:28px; height:28px; cursor:pointer; color:white; font-size:14px;"
+        title="Mosaico de la Villa">🎨</button>
+
+      <button class="hotspot" slot="hotspot-tumba"
+        data-position="0.9m 0.4m 0.3m"
+        data-normal="0 1 0"
+        data-visibility-attribute="visible"
+        style="background:#9b59b6; border:none; border-radius:50%; width:28px; height:28px; cursor:pointer; color:white; font-size:14px;"
+        title="Enterramiento Medieval">⚱️</button>
+
+      <button class="hotspot" slot="hotspot-muralla"
+        data-position="-1.1m 0.5m 0m"
+        data-normal="0 1 0"
+        data-visibility-attribute="visible"
+        style="background:#2ecc71; border:none; border-radius:50%; width:28px; height:28px; cursor:pointer; color:white; font-size:14px;"
+        title="Muralla del Castro">🏰</button>
+
+      <button class="hotspot" slot="hotspot-hogar"
+        data-position="0.5m 0.3m -0.3m"
+        data-normal="0 1 0"
+        data-visibility-attribute="visible"
+        style="background:#e67e22; border:none; border-radius:50%; width:28px; height:28px; cursor:pointer; color:white; font-size:14px;"
+        title="Hogar Prehistórico">🔥</button>
+
+      <!-- Progress bar -->
+      <div class="progress-bar hide" slot="progress-bar">
+        <div class="update-bar" style="background:#4466ff; height:3px; transition:width 0.3s;"></div>
+      </div>
+    </model-viewer>
+
+    <div class="overlay-info" id="hint">
+      🖐️ Arrastra para rotar · Pellizca para zoom · Botón AR para colocar en el espacio real
+    </div>
+  </div>
+
+  <div class="no-ar-msg" id="no-ar">
+    ⚠️ AR no disponible en este dispositivo/navegador
+  </div>
+
+  <script>
+    const viewer = document.getElementById('viewer');
+    const hint = document.getElementById('hint');
+    const noAr = document.getElementById('no-ar');
+
+    viewer.addEventListener('ar-status', (e) => {
+      if (e.detail.status === 'not-presenting') {
+        hint.style.display = 'block';
+      } else {
+        hint.style.display = 'none';
+      }
+    });
+
+    // Check AR support
+    viewer.addEventListener('load', () => {
+      if (!viewer.canActivateAR) {
+        noAr.style.display = 'block';
+        console.log('AR not available on this device');
+      }
+    });
+
+    // Hotspot tooltips
+    document.querySelectorAll('.hotspot').forEach(btn => {
+      btn.addEventListener('click', () => {
+        alert(btn.title);
+      });
+    });
+  </script>
+</body>
+</html>

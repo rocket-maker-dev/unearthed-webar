@@ -1,0 +1,3 @@
+nombre,ancho,alto,largo,x,y,z,descripcion,color
+Mosaico del Triclinium,2.0,0.1,2.0,0,0.05,0,"Suelo de mosaico reconstruido tal como era en época romana",#f39c12
+Muralla del Castro,0.5,2.0,6.0,-3.5,1.0,0,"Muralla perimetral del castro a su altura original estimada",#2ecc71

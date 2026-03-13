@@ -1,0 +1,1754 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>UNEARTHED — Comunidad</title>
+  <style>
+    /* ══════════════════════════════════════════════
+       RESET & BASE
+    ══════════════════════════════════════════════ */
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg: #080810;
+      --bg-card: #0d1020;
+      --bg-card-alt: #111428;
+      --gold: #c9842a;
+      --gold-dim: #a06a1e;
+      --gold-glow: rgba(201,132,42,0.25);
+      --blue: #4466ff;
+      --blue-dim: #3355cc;
+      --blue-glow: rgba(68,102,255,0.2);
+      --text: #e0e4f0;
+      --text-dim: #8899bb;
+      --text-muted: #556688;
+      --border: rgba(68,102,255,0.15);
+      --border-gold: rgba(201,132,42,0.25);
+      --radius: 12px;
+      --radius-sm: 8px;
+      --max-w: 1200px;
+      --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    a { color: var(--gold); text-decoration: none; transition: color 0.2s; }
+    a:hover { color: #e0a040; }
+
+    img { max-width: 100%; display: block; }
+
+    .container { max-width: var(--max-w); margin: 0 auto; padding: 0 20px; }
+
+    /* ══════════════════════════════════════════════
+       HEADER
+    ══════════════════════════════════════════════ */
+    header {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      background: rgba(8,8,16,0.92);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border);
+    }
+
+    header .container {
+      display: flex; align-items: center; justify-content: space-between;
+      height: 64px;
+    }
+
+    .logo {
+      display: flex; align-items: center; gap: 10px;
+      font-size: 1.15rem; font-weight: 800; letter-spacing: 3px;
+      color: #fff;
+    }
+
+    .logo-icon {
+      width: 36px; height: 36px; border-radius: 8px;
+      background: linear-gradient(135deg, var(--gold), var(--blue));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.1rem;
+    }
+
+    .logo small {
+      font-size: 0.55rem; font-weight: 400; color: var(--text-dim);
+      letter-spacing: 1px; display: block; margin-top: -2px;
+    }
+
+    nav { display: flex; gap: 6px; align-items: center; }
+
+    nav a {
+      color: var(--text-dim); font-size: 0.78rem; padding: 6px 12px;
+      border-radius: 20px; transition: all 0.2s; letter-spacing: 0.5px;
+    }
+
+    nav a:hover, nav a.active {
+      color: #fff; background: rgba(68,102,255,0.15);
+    }
+
+    .nav-toggle {
+      display: none; background: none; border: none; color: #fff;
+      font-size: 1.4rem; cursor: pointer; padding: 8px;
+    }
+
+    @media (max-width: 768px) {
+      .nav-toggle { display: block; }
+      nav {
+        position: fixed; top: 64px; left: 0; right: 0;
+        background: rgba(8,8,16,0.97); backdrop-filter: blur(16px);
+        flex-direction: column; padding: 16px; gap: 4px;
+        transform: translateY(-120%); transition: transform 0.3s;
+        border-bottom: 1px solid var(--border);
+      }
+      nav.open { transform: translateY(0); }
+      nav a { padding: 12px 16px; font-size: 0.9rem; width: 100%; }
+    }
+
+    /* ══════════════════════════════════════════════
+       HERO
+    ══════════════════════════════════════════════ */
+    .hero {
+      position: relative; min-height: 85vh;
+      display: flex; align-items: center; justify-content: center;
+      text-align: center; padding: 100px 20px 60px;
+      overflow: hidden;
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute; inset: 0;
+      background:
+        radial-gradient(ellipse 80% 60% at 50% 40%, rgba(201,132,42,0.08), transparent 70%),
+        radial-gradient(ellipse 60% 50% at 30% 70%, rgba(68,102,255,0.06), transparent 60%);
+    }
+
+    .hero-grid {
+      position: absolute; inset: 0; opacity: 0.04;
+      background-image:
+        linear-gradient(var(--blue) 1px, transparent 1px),
+        linear-gradient(90deg, var(--blue) 1px, transparent 1px);
+      background-size: 60px 60px;
+    }
+
+    .hero-content { position: relative; z-index: 2; max-width: 800px; }
+
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: rgba(201,132,42,0.12); border: 1px solid var(--border-gold);
+      border-radius: 20px; padding: 6px 16px; font-size: 0.75rem;
+      color: var(--gold); letter-spacing: 1px; margin-bottom: 20px;
+    }
+
+    .hero h1 {
+      font-size: clamp(2.2rem, 6vw, 4rem);
+      font-weight: 800; letter-spacing: 2px;
+      background: linear-gradient(135deg, #fff 30%, var(--gold));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text; line-height: 1.1; margin-bottom: 12px;
+    }
+
+    .hero h2 {
+      font-size: clamp(1rem, 2.5vw, 1.5rem);
+      font-weight: 400; color: var(--text-dim); margin-bottom: 8px;
+    }
+
+    .hero-location {
+      font-size: 0.85rem; color: var(--text-muted);
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+    }
+
+    .hero-stats {
+      display: flex; gap: 24px; justify-content: center; margin-top: 32px;
+      flex-wrap: wrap;
+    }
+
+    .hero-stat {
+      text-align: center;
+    }
+
+    .hero-stat .num {
+      font-size: 1.8rem; font-weight: 800; color: var(--gold);
+      display: block;
+    }
+
+    .hero-stat .label {
+      font-size: 0.7rem; color: var(--text-muted); letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    .scroll-hint {
+      position: absolute; bottom: 30px; left: 50%;
+      transform: translateX(-50%);
+      animation: float 2s ease-in-out infinite;
+      color: var(--text-muted); font-size: 0.75rem;
+      display: flex; flex-direction: column; align-items: center; gap: 4px;
+    }
+
+    @keyframes float {
+      0%,100% { transform: translateX(-50%) translateY(0); }
+      50% { transform: translateX(-50%) translateY(8px); }
+    }
+
+    /* ══════════════════════════════════════════════
+       SECTIONS
+    ══════════════════════════════════════════════ */
+    section {
+      padding: 80px 0;
+      border-top: 1px solid var(--border);
+    }
+
+    .section-header {
+      text-align: center; margin-bottom: 48px;
+    }
+
+    .section-tag {
+      display: inline-block; font-size: 0.7rem; letter-spacing: 2px;
+      text-transform: uppercase; color: var(--gold);
+      background: rgba(201,132,42,0.1); border: 1px solid var(--border-gold);
+      border-radius: 4px; padding: 4px 12px; margin-bottom: 12px;
+    }
+
+    .section-header h2 {
+      font-size: clamp(1.6rem, 4vw, 2.4rem); font-weight: 700;
+      color: #fff; margin-bottom: 8px;
+    }
+
+    .section-header p {
+      color: var(--text-dim); max-width: 600px; margin: 0 auto;
+      font-size: 0.95rem;
+    }
+
+    /* ══════════════════════════════════════════════
+       ABOUT SECTION
+    ══════════════════════════════════════════════ */
+    .about-grid {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 32px; align-items: start;
+    }
+
+    @media (max-width: 768px) {
+      .about-grid { grid-template-columns: 1fr; }
+    }
+
+    .about-text { font-size: 0.95rem; color: var(--text-dim); }
+    .about-text p { margin-bottom: 16px; }
+    .about-text strong { color: var(--text); }
+
+    .room-cards { display: flex; flex-direction: column; gap: 12px; }
+
+    .room-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px 20px;
+      display: flex; align-items: center; gap: 16px;
+      transition: border-color 0.3s, transform 0.2s;
+    }
+
+    .room-card:hover {
+      transform: translateY(-2px);
+    }
+
+    .room-icon {
+      width: 48px; height: 48px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.4rem; flex-shrink: 0;
+    }
+
+    .room-card h4 { font-size: 0.95rem; color: #fff; margin-bottom: 2px; }
+    .room-card p { font-size: 0.78rem; color: var(--text-muted); }
+    .room-temp { font-size: 0.7rem; color: var(--gold); margin-top: 2px; }
+
+    /* ══════════════════════════════════════════════
+       3D VIEWER
+    ══════════════════════════════════════════════ */
+    .viewer-container {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    .viewer-canvas-wrap {
+      position: relative;
+      width: 100%; aspect-ratio: 16/10;
+      background: #060812;
+      cursor: grab;
+    }
+
+    .viewer-canvas-wrap:active { cursor: grabbing; }
+
+    #viewer-canvas {
+      width: 100%; height: 100%; display: block;
+    }
+
+    .viewer-toolbar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 16px;
+      background: rgba(0,0,0,0.3);
+      border-top: 1px solid var(--border);
+      flex-wrap: wrap; gap: 8px;
+    }
+
+    .viewer-model-name {
+      font-size: 0.85rem; font-weight: 600; color: #fff;
+    }
+
+    .viewer-controls {
+      display: flex; gap: 6px;
+    }
+
+    .viewer-btn {
+      background: rgba(68,102,255,0.15); border: 1px solid var(--border);
+      color: var(--text-dim); border-radius: var(--radius-sm);
+      padding: 6px 14px; font-size: 0.78rem; cursor: pointer;
+      transition: all 0.2s; font-family: var(--font);
+    }
+
+    .viewer-btn:hover {
+      background: rgba(68,102,255,0.3); color: #fff;
+    }
+
+    .viewer-btn.active {
+      background: var(--blue); color: #fff; border-color: var(--blue);
+    }
+
+    .viewer-info {
+      width: 100%; padding: 8px 16px 4px;
+      font-size: 0.78rem; color: var(--text-muted);
+    }
+
+    /* Timeline */
+    .anim-timeline {
+      display: flex; align-items: center; gap: 8px; width: 100%;
+      padding: 8px 16px 12px;
+    }
+
+    .anim-timeline input[type="range"] {
+      flex: 1; accent-color: var(--gold);
+    }
+
+    .anim-time { font-size: 0.72rem; color: var(--text-muted); min-width: 40px; }
+
+    /* Thumbnail gallery */
+    .model-gallery {
+      display: flex; gap: 10px; padding: 16px;
+      overflow-x: auto; -webkit-overflow-scrolling: touch;
+    }
+
+    .model-thumb {
+      flex-shrink: 0; width: 110px;
+      background: var(--bg-card-alt);
+      border: 2px solid transparent;
+      border-radius: var(--radius-sm);
+      cursor: pointer; transition: all 0.2s; overflow: hidden;
+    }
+
+    .model-thumb.active {
+      border-color: var(--gold);
+      box-shadow: 0 0 12px var(--gold-glow);
+    }
+
+    .model-thumb:hover { border-color: var(--blue); }
+
+    .model-thumb-img {
+      width: 100%; aspect-ratio: 1;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 2.2rem;
+      background: linear-gradient(135deg, #0a0f25, #0d1530);
+    }
+
+    .model-thumb-label {
+      padding: 6px 8px; font-size: 0.68rem; color: var(--text-dim);
+      text-align: center; white-space: nowrap; overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* Upload zone in viewer */
+    .upload-model-zone {
+      display: flex; align-items: center; justify-content: center;
+      padding: 24px; gap: 12px; flex-wrap: wrap;
+      border-top: 1px solid var(--border);
+    }
+
+    .upload-model-zone label {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: rgba(201,132,42,0.12); border: 1px dashed var(--gold-dim);
+      border-radius: var(--radius-sm); padding: 10px 20px;
+      font-size: 0.82rem; color: var(--gold); cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .upload-model-zone label:hover {
+      background: rgba(201,132,42,0.2);
+    }
+
+    .upload-model-zone input[type="file"] { display: none; }
+
+    .viewer-placeholder {
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      color: var(--text-muted); gap: 8px;
+    }
+
+    .viewer-placeholder .icon { font-size: 3rem; opacity: 0.3; }
+    .viewer-placeholder p { font-size: 0.85rem; }
+
+    /* ══════════════════════════════════════════════
+       CSV TABLES
+    ══════════════════════════════════════════════ */
+    .csv-tabs {
+      display: flex; gap: 4px; margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+
+    .csv-tab {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 20px; padding: 8px 18px; font-size: 0.82rem;
+      color: var(--text-dim); cursor: pointer; transition: all 0.2s;
+      font-family: var(--font);
+    }
+
+    .csv-tab:hover { border-color: var(--blue); color: #fff; }
+
+    .csv-tab.active {
+      background: var(--blue); border-color: var(--blue); color: #fff;
+    }
+
+    .csv-panel { display: none; }
+    .csv-panel.active { display: block; }
+
+    .csv-table-wrap {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: auto;
+    }
+
+    .csv-table {
+      width: 100%; border-collapse: collapse;
+      font-size: 0.82rem;
+    }
+
+    .csv-table thead {
+      background: rgba(68,102,255,0.08);
+    }
+
+    .csv-table th {
+      padding: 12px 16px; text-align: left;
+      font-weight: 600; color: var(--gold);
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap; font-size: 0.75rem;
+      letter-spacing: 0.5px; text-transform: uppercase;
+    }
+
+    .csv-table td {
+      padding: 10px 16px; border-bottom: 1px solid rgba(255,255,255,0.03);
+      color: var(--text-dim);
+    }
+
+    .csv-table tbody tr:hover {
+      background: rgba(68,102,255,0.04);
+    }
+
+    .csv-table .color-dot {
+      display: inline-block; width: 10px; height: 10px;
+      border-radius: 50%; margin-right: 6px; vertical-align: middle;
+    }
+
+    .csv-upload-area {
+      margin-top: 20px; padding: 20px;
+      border: 1px dashed var(--border);
+      border-radius: var(--radius);
+      text-align: center; color: var(--text-muted);
+    }
+
+    .csv-upload-area label {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: rgba(68,102,255,0.1); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); padding: 10px 20px;
+      color: var(--blue); cursor: pointer; font-size: 0.85rem;
+      transition: all 0.2s; margin-top: 8px;
+    }
+
+    .csv-upload-area label:hover { background: rgba(68,102,255,0.2); }
+    .csv-upload-area input[type="file"] { display: none; }
+
+    /* ══════════════════════════════════════════════
+       GALLERY
+    ══════════════════════════════════════════════ */
+    .gallery-section-title {
+      font-size: 1rem; font-weight: 600; color: var(--gold);
+      margin-bottom: 16px; display: flex; align-items: center; gap: 8px;
+    }
+
+    .gallery-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 12px; margin-bottom: 40px;
+    }
+
+    .gallery-item {
+      aspect-ratio: 4/3;
+      background: var(--bg-card-alt);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden; cursor: pointer;
+      transition: all 0.3s; position: relative;
+    }
+
+    .gallery-item:hover {
+      border-color: var(--gold);
+      transform: translateY(-3px);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    }
+
+    .gallery-item img {
+      width: 100%; height: 100%; object-fit: cover;
+    }
+
+    .gallery-placeholder {
+      width: 100%; height: 100%;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      color: var(--text-muted); gap: 6px; padding: 16px;
+      text-align: center;
+    }
+
+    .gallery-placeholder .gp-icon { font-size: 2rem; opacity: 0.3; }
+    .gallery-placeholder .gp-text { font-size: 0.72rem; line-height: 1.4; }
+
+    .gallery-item .caption {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      background: linear-gradient(transparent, rgba(0,0,0,0.85));
+      padding: 20px 12px 10px; font-size: 0.75rem; color: #ccc;
+    }
+
+    /* Lightbox */
+    .lightbox {
+      position: fixed; inset: 0; z-index: 200;
+      background: rgba(0,0,0,0.92); display: none;
+      align-items: center; justify-content: center;
+      backdrop-filter: blur(8px);
+    }
+
+    .lightbox.open { display: flex; }
+
+    .lightbox-close {
+      position: absolute; top: 20px; right: 20px;
+      background: rgba(255,255,255,0.1); border: none; color: #fff;
+      width: 40px; height: 40px; border-radius: 50%;
+      font-size: 1.2rem; cursor: pointer;
+    }
+
+    .lightbox-content {
+      max-width: 90vw; max-height: 80vh;
+      display: flex; flex-direction: column; align-items: center; gap: 12px;
+    }
+
+    .lightbox-content img { max-width: 100%; max-height: 70vh; border-radius: 8px; }
+    .lightbox-caption { font-size: 0.9rem; color: var(--text-dim); }
+
+    /* ══════════════════════════════════════════════
+       FORM
+    ══════════════════════════════════════════════ */
+    .form-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 32px;
+      max-width: 700px; margin: 0 auto;
+    }
+
+    .form-row {
+      margin-bottom: 20px;
+    }
+
+    .form-row label {
+      display: block; font-size: 0.82rem; font-weight: 600;
+      color: var(--text); margin-bottom: 6px;
+    }
+
+    .form-row label .optional {
+      font-weight: 400; color: var(--text-muted); font-size: 0.75rem;
+    }
+
+    .form-row input[type="text"],
+    .form-row input[type="email"],
+    .form-row textarea,
+    .form-row select {
+      width: 100%; padding: 10px 14px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text); font-size: 0.88rem;
+      font-family: var(--font);
+      transition: border-color 0.2s;
+    }
+
+    .form-row input:focus,
+    .form-row textarea:focus,
+    .form-row select:focus {
+      outline: none; border-color: var(--gold);
+      box-shadow: 0 0 0 3px var(--gold-glow);
+    }
+
+    .form-row textarea { min-height: 100px; resize: vertical; }
+
+    .form-row select option { background: var(--bg-card); color: var(--text); }
+
+    .form-row-inline {
+      display: flex; gap: 16px;
+    }
+
+    .form-row-inline .form-row { flex: 1; }
+
+    @media (max-width: 500px) {
+      .form-row-inline { flex-direction: column; gap: 0; }
+    }
+
+    .form-check {
+      display: flex; align-items: center; gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .form-check input[type="checkbox"] {
+      width: 18px; height: 18px; accent-color: var(--gold);
+    }
+
+    .form-check label {
+      font-size: 0.85rem; color: var(--text-dim); cursor: pointer;
+    }
+
+    .drop-zone {
+      border: 2px dashed var(--border);
+      border-radius: var(--radius);
+      padding: 28px 20px; text-align: center;
+      color: var(--text-muted); cursor: pointer;
+      transition: all 0.2s; margin-bottom: 20px;
+    }
+
+    .drop-zone:hover {
+      border-color: var(--gold-dim);
+      background: rgba(201,132,42,0.04);
+    }
+
+    .drop-zone .dz-icon { font-size: 2rem; margin-bottom: 8px; opacity: 0.4; }
+    .drop-zone .dz-text { font-size: 0.82rem; }
+    .drop-zone .dz-hint { font-size: 0.72rem; color: var(--text-muted); margin-top: 4px; }
+
+    .btn-submit {
+      background: linear-gradient(135deg, var(--gold), var(--gold-dim));
+      color: #fff; border: none; border-radius: var(--radius-sm);
+      padding: 14px 36px; font-size: 1rem; font-weight: 600;
+      cursor: pointer; width: 100%; transition: all 0.2s;
+      font-family: var(--font); letter-spacing: 0.5px;
+    }
+
+    .btn-submit:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 8px 20px rgba(201,132,42,0.3);
+    }
+
+    .form-success {
+      display: none; text-align: center; padding: 40px 20px;
+    }
+
+    .form-success .check { font-size: 3rem; margin-bottom: 12px; }
+    .form-success h3 { color: var(--gold); font-size: 1.3rem; margin-bottom: 8px; }
+    .form-success p { color: var(--text-dim); font-size: 0.9rem; }
+
+    /* ══════════════════════════════════════════════
+       FOOTER
+    ══════════════════════════════════════════════ */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 32px 0;
+      text-align: center;
+    }
+
+    footer p { font-size: 0.78rem; color: var(--text-muted); }
+    footer a { color: var(--gold); }
+
+    .footer-links {
+      display: flex; gap: 16px; justify-content: center;
+      margin-bottom: 12px; flex-wrap: wrap;
+    }
+
+    .footer-links a { font-size: 0.78rem; color: var(--text-muted); }
+    .footer-links a:hover { color: var(--gold); }
+
+    /* ══════════════════════════════════════════════
+       SCROLLBAR
+    ══════════════════════════════════════════════ */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(68,102,255,0.2); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(68,102,255,0.4); }
+
+    /* ══════════════════════════════════════════════
+       ANIMATIONS
+    ══════════════════════════════════════════════ */
+    .fade-in {
+      opacity: 0; transform: translateY(24px);
+      transition: opacity 0.6s ease, transform 0.6s ease;
+    }
+
+    .fade-in.visible {
+      opacity: 1; transform: translateY(0);
+    }
+
+    /* ══════════════════════════════════════════════
+       LOADING SPINNER FOR 3D
+    ══════════════════════════════════════════════ */
+    .viewer-loading {
+      position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      background: rgba(6,8,18,0.8); z-index: 5;
+    }
+
+    .spinner {
+      width: 40px; height: 40px;
+      border: 3px solid rgba(201,132,42,0.2);
+      border-top-color: var(--gold);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+
+  <!-- ═══════════ HEADER ═══════════ -->
+  <header>
+    <div class="container">
+      <a href="#top" class="logo">
+        <div class="logo-icon">🏛️</div>
+        <div>UNEARTHED<small>Comunidad</small></div>
+      </a>
+      <button class="nav-toggle" onclick="document.querySelector('nav').classList.toggle('open')" aria-label="Menú">☰</button>
+      <nav>
+        <a href="#about" onclick="closeNav()">Yacimiento</a>
+        <a href="#viewer" onclick="closeNav()">Visor 3D</a>
+        <a href="#datos" onclick="closeNav()">Datos</a>
+        <a href="#galeria" onclick="closeNav()">Galería</a>
+        <a href="#submit" onclick="closeNav()">Colaborar</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- ═══════════ HERO ═══════════ -->
+  <section class="hero" id="top">
+    <div class="hero-grid"></div>
+    <div class="hero-content">
+      <div class="hero-badge">🔬 FIRST LEGO LEAGUE 2025–2026</div>
+      <h1>Termas Romanas<br>de Caldoval</h1>
+      <h2>Excavación arqueológica interactiva con WebAR</h2>
+      <div class="hero-location">📍 Mugardos, A Coruña — Galicia</div>
+      <div class="hero-stats">
+        <div class="hero-stat">
+          <span class="num">5</span>
+          <span class="label">Salas termales</span>
+        </div>
+        <div class="hero-stat">
+          <span class="num">2000</span>
+          <span class="label">Años de historia</span>
+        </div>
+        <div class="hero-stat">
+          <span class="num">5</span>
+          <span class="label">Hallazgos</span>
+        </div>
+        <div class="hero-stat">
+          <span class="num">3D</span>
+          <span class="label">Modelos AR</span>
+        </div>
+      </div>
+    </div>
+    <div class="scroll-hint">
+      <span>Explorar</span>
+      <span>▼</span>
+    </div>
+  </section>
+
+  <!-- ═══════════ ABOUT ═══════════ -->
+  <section id="about">
+    <div class="container">
+      <div class="section-header fade-in">
+        <div class="section-tag">📜 Contexto Histórico</div>
+        <h2>Sobre el Yacimiento</h2>
+        <p>Las termas romanas de Caldoval representan uno de los conjuntos termales mejor conservados del noroeste peninsular</p>
+      </div>
+
+      <div class="about-grid fade-in">
+        <div class="about-text">
+          <p>Las <strong>Termas Romanas de Caldoval</strong> (Mugardos, A Coruña) son un yacimiento arqueológico de época romana que conserva los restos de un complejo termal con su sistema de calefacción original — el <strong>hypocaustum</strong>.</p>
+          <p>Este sistema, considerado el <strong>primer suelo radiante de la historia</strong>, funcionaba mediante un horno (<em>praefurnium</em>) que calentaba aire circulando bajo el suelo, elevado sobre pilares de ladrillo (<em>pilae</em>), y a través de tubos cerámicos en las paredes (<em>tubuli</em>).</p>
+          <p>El equipo del <strong>Espacio Vivo Maker Lab</strong> ha creado reconstrucciones 3D interactivas de las diferentes salas y elementos arquitectónicos, visualizables en realidad aumentada directamente sobre el yacimiento real.</p>
+          <p>A través de UNEARTHED, buscamos que otros equipos FLL puedan replicar esta experiencia con sus propios yacimientos locales, creando una <strong>red comunitaria de patrimonio arqueológico interactivo</strong>.</p>
+        </div>
+
+        <div class="room-cards">
+          <div class="room-card" style="border-color: rgba(100,150,255,0.3);">
+            <div class="room-icon" style="background: rgba(100,150,255,0.1);">🧊</div>
+            <div>
+              <h4>Frigidarium</h4>
+              <p>Sala fría — baños de agua fría para cerrar los poros</p>
+              <div class="room-temp">~18°C</div>
+            </div>
+          </div>
+          <div class="room-card" style="border-color: rgba(201,132,42,0.3);">
+            <div class="room-icon" style="background: rgba(201,132,42,0.1);">♨️</div>
+            <div>
+              <h4>Tepidarium</h4>
+              <p>Sala templada — zona de transición y relajación</p>
+              <div class="room-temp">~35°C</div>
+            </div>
+          </div>
+          <div class="room-card" style="border-color: rgba(220,60,60,0.3);">
+            <div class="room-icon" style="background: rgba(220,60,60,0.1);">🔥</div>
+            <div>
+              <h4>Caldarium</h4>
+              <p>Sala caliente — baños de vapor y agua caliente</p>
+              <div class="room-temp">~50°C</div>
+            </div>
+          </div>
+          <div class="room-card" style="border-color: rgba(255,160,50,0.3);">
+            <div class="room-icon" style="background: rgba(255,160,50,0.1);">🏗️</div>
+            <div>
+              <h4>Hypocaustum</h4>
+              <p>Sistema de calefacción subterráneo con pilae y praefurnium</p>
+              <div class="room-temp">El primer suelo radiante</div>
+            </div>
+          </div>
+          <div class="room-card" style="border-color: rgba(180,120,80,0.3);">
+            <div class="room-icon" style="background: rgba(180,120,80,0.1);">🧱</div>
+            <div>
+              <h4>Tubuli</h4>
+              <p>Tubos cerámicos en paredes para conducir el calor</p>
+              <div class="room-temp">Ingeniería térmica romana</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════ 3D VIEWER ═══════════ -->
+  <section id="viewer">
+    <div class="container">
+      <div class="section-header fade-in">
+        <div class="section-tag">🎮 Interactivo</div>
+        <h2>Visor de Assets 3D</h2>
+        <p>Explora los modelos 3D de las Termas de Caldoval. Rota, haz zoom y descubre cada detalle arquitectónico</p>
+      </div>
+
+      <div class="viewer-container fade-in">
+        <!-- Thumbnail gallery -->
+        <div class="model-gallery" id="model-gallery">
+          <!-- Populated by JS -->
+        </div>
+
+        <!-- Canvas -->
+        <div class="viewer-canvas-wrap" id="viewer-wrap">
+          <canvas id="viewer-canvas"></canvas>
+          <div class="viewer-placeholder" id="viewer-placeholder">
+            <div class="icon">🏛️</div>
+            <p>Selecciona un modelo para visualizarlo</p>
+            <p style="font-size:0.72rem;">o carga un archivo .glb / .gltf</p>
+          </div>
+          <div class="viewer-loading" id="viewer-loading" style="display:none;">
+            <div class="spinner"></div>
+          </div>
+        </div>
+
+        <!-- Toolbar -->
+        <div class="viewer-toolbar">
+          <div class="viewer-model-name" id="viewer-model-name">Ningún modelo seleccionado</div>
+          <div class="viewer-controls">
+            <button class="viewer-btn" id="btn-play" onclick="toggleAnimation()" title="Play/Pause animación">▶ Play</button>
+            <button class="viewer-btn" id="btn-reset" onclick="resetCamera()" title="Reset cámara">⟲ Reset</button>
+            <button class="viewer-btn" id="btn-wireframe" onclick="toggleWireframe()" title="Wireframe">◇ Wire</button>
+          </div>
+        </div>
+
+        <!-- Animation timeline -->
+        <div class="anim-timeline" id="anim-timeline" style="display:none;">
+          <span class="anim-time" id="anim-current">0:00</span>
+          <input type="range" id="anim-slider" min="0" max="100" value="0" step="0.1" oninput="seekAnimation(this.value)">
+          <span class="anim-time" id="anim-duration">0:00</span>
+        </div>
+
+        <div class="viewer-info" id="viewer-info"></div>
+
+        <!-- Upload custom model -->
+        <div class="upload-model-zone">
+          <label>
+            📂 Cargar modelo .glb / .gltf
+            <input type="file" id="model-upload" accept=".glb,.gltf" onchange="loadCustomModel(this.files[0])">
+          </label>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════ CSV DATA ═══════════ -->
+  <section id="datos">
+    <div class="container">
+      <div class="section-header fade-in">
+        <div class="section-tag">📊 Datos de Excavación</div>
+        <h2>Registro de Hallazgos</h2>
+        <p>Datos arqueológicos estructurados del yacimiento. Descarga las plantillas CSV para documentar tu propio yacimiento</p>
+      </div>
+
+      <div class="fade-in">
+        <div class="csv-tabs">
+          <button class="csv-tab active" onclick="showCSV('hallazgos')">🏺 Hallazgos</button>
+          <button class="csv-tab" onclick="showCSV('posiciones')">📍 Posiciones</button>
+          <button class="csv-tab" onclick="showCSV('reconstrucciones')">🏗️ Reconstrucciones</button>
+        </div>
+
+        <div class="csv-panel active" id="csv-hallazgos"></div>
+        <div class="csv-panel" id="csv-posiciones"></div>
+        <div class="csv-panel" id="csv-reconstrucciones"></div>
+
+        <div class="csv-upload-area">
+          <p>¿Tienes tus propios datos? Carga un CSV para visualizarlo</p>
+          <label>
+            📄 Cargar CSV
+            <input type="file" accept=".csv" onchange="loadCustomCSV(this.files[0])">
+          </label>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════ GALLERY ═══════════ -->
+  <section id="galeria">
+    <div class="container">
+      <div class="section-header fade-in">
+        <div class="section-tag">📸 Visual</div>
+        <h2>Galería</h2>
+        <p>Montajes AR sobre el yacimiento real y trabajos del equipo</p>
+      </div>
+
+      <div class="fade-in">
+        <div class="gallery-section-title">🔮 Montajes AR</div>
+        <div class="gallery-grid" id="gallery-ar">
+          <!-- Populated by JS -->
+        </div>
+
+        <div class="gallery-section-title">👩‍🔬 Trabajos de los Alumnos</div>
+        <div class="gallery-grid" id="gallery-students">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════ SUBMIT FORM ═══════════ -->
+  <section id="submit">
+    <div class="container">
+      <div class="section-header fade-in">
+        <div class="section-tag">🤝 Colaborar</div>
+        <h2>Sube Tu Yacimiento</h2>
+        <p>¿Tu equipo FLL ha investigado un yacimiento local? Compártelo con la comunidad UNEARTHED</p>
+      </div>
+
+      <div class="form-card fade-in">
+        <form id="site-form" onsubmit="return submitForm(event)">
+          <div class="form-row">
+            <label>Nombre del yacimiento *</label>
+            <input type="text" placeholder="Ej: Castro de Baroña" required>
+          </div>
+
+          <div class="form-row-inline">
+            <div class="form-row">
+              <label>Ubicación *</label>
+              <input type="text" placeholder="Ej: Porto do Son, A Coruña" required>
+            </div>
+            <div class="form-row">
+              <label>Coordenadas GPS <span class="optional">(opcional)</span></label>
+              <input type="text" placeholder="Ej: 42.6618, -9.0194">
+            </div>
+          </div>
+
+          <div class="form-row">
+            <label>Periodo histórico *</label>
+            <select required>
+              <option value="" disabled selected>Selecciona un periodo...</option>
+              <option value="prehistorico">🦴 Prehistórico</option>
+              <option value="prerromano">⚔️ Prerromano</option>
+              <option value="romano">🏛️ Romano</option>
+              <option value="medieval">🏰 Medieval</option>
+              <option value="otro">📜 Otro</option>
+            </select>
+          </div>
+
+          <div class="form-row">
+            <label>Descripción breve *</label>
+            <textarea placeholder="Describe el yacimiento, qué se encontró, por qué es interesante..." required></textarea>
+          </div>
+
+          <div class="form-row-inline">
+            <div class="form-row">
+              <label>Equipo / Centro educativo *</label>
+              <input type="text" placeholder="Ej: FLL Team Alpha — IES Mugardos" required>
+            </div>
+            <div class="form-row">
+              <label>Email de contacto *</label>
+              <input type="email" placeholder="equipo@centro.edu" required>
+            </div>
+          </div>
+
+          <div class="form-check">
+            <input type="checkbox" id="has-scan">
+            <label for="has-scan">Tengo un escaneo 3D del espacio</label>
+          </div>
+
+          <div class="drop-zone" onclick="this.querySelector('input')?.click()">
+            <div class="dz-icon">📷</div>
+            <div class="dz-text">Arrastra fotos del yacimiento aquí</div>
+            <div class="dz-hint">JPG, PNG — máx. 10 MB por imagen</div>
+            <input type="file" accept="image/*" multiple style="display:none">
+          </div>
+
+          <div class="drop-zone" onclick="this.querySelector('input')?.click()">
+            <div class="dz-icon">📄</div>
+            <div class="dz-text">Sube tus CSVs (hallazgos, posiciones, reconstrucciones)</div>
+            <div class="dz-hint">Basados en las plantillas UNEARTHED — formato .csv</div>
+            <input type="file" accept=".csv" multiple style="display:none">
+          </div>
+
+          <button type="submit" class="btn-submit">🚀 Enviar propuesta</button>
+        </form>
+
+        <div class="form-success" id="form-success">
+          <div class="check">✅</div>
+          <h3>¡Recibido!</h3>
+          <p>Revisaremos tu propuesta y nos pondremos en contacto contigo pronto.<br>
+          ¡Gracias por contribuir a la comunidad UNEARTHED!</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════ FOOTER ═══════════ -->
+  <footer>
+    <div class="container">
+      <div class="footer-links">
+        <a href="https://espaciovivo.gal/unearthed/">🏠 Web principal</a>
+        <a href="#viewer">🎮 Visor 3D</a>
+        <a href="#datos">📊 Datos</a>
+        <a href="#submit">🤝 Colaborar</a>
+      </div>
+      <p>FLL UNEARTHED 2025–2026 · <a href="https://espaciovivo.gal" target="_blank">Espacio Vivo</a> Maker Lab</p>
+      <p style="margin-top:4px; font-size: 0.7rem;">Termas Romanas de Caldoval — Mugardos, A Coruña</p>
+    </div>
+  </footer>
+
+  <!-- ═══════════ LIGHTBOX ═══════════ -->
+  <div class="lightbox" id="lightbox" onclick="closeLightbox()">
+    <button class="lightbox-close" onclick="closeLightbox()">✕</button>
+    <div class="lightbox-content" onclick="event.stopPropagation()">
+      <img id="lightbox-img" src="" alt="">
+      <div class="lightbox-caption" id="lightbox-caption"></div>
+    </div>
+  </div>
+
+  <!-- ═══════════ THREE.JS ═══════════ -->
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+    }
+  }
+  </script>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+    import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+    import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
+
+    // ── State ──
+    let scene, camera, renderer, controls;
+    let currentModel = null;
+    let mixer = null;
+    let currentAction = null;
+    let animPlaying = false;
+    let wireframeOn = false;
+    let clock = new THREE.Clock();
+
+    // ── Models catalog ──
+    const models = [
+      { id: 'hypocaustum', name: 'Hypocaustum', emoji: '🏗️', desc: 'Sistema de calefacción subterráneo — pilae y praefurnium', color: '#ffa030' },
+      { id: 'pilae', name: 'Pilae', emoji: '🧱', desc: 'Pilares de ladrillo que soportan el suelo elevado', color: '#c97830' },
+      { id: 'tubuli', name: 'Tubuli', emoji: '🔧', desc: 'Tubos cerámicos para conducción de calor en paredes', color: '#b47850' },
+      { id: 'frigidarium', name: 'Frigidarium', emoji: '🧊', desc: 'Sala fría — piscina de agua fría (~18°C)', color: '#6496ff' },
+      { id: 'caldarium', name: 'Caldarium', emoji: '🔥', desc: 'Sala caliente — baños de vapor (~50°C)', color: '#dc3c3c' },
+    ];
+
+    // ── Init Three.js ──
+    function initViewer() {
+      const canvas = document.getElementById('viewer-canvas');
+      const wrap = document.getElementById('viewer-wrap');
+
+      scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x060812);
+
+      // Grid
+      const grid = new THREE.GridHelper(10, 20, 0x1a2040, 0x0e1428);
+      scene.add(grid);
+
+      // Lights
+      const ambient = new THREE.AmbientLight(0xffffff, 0.5);
+      scene.add(ambient);
+
+      const dirLight = new THREE.DirectionalLight(0xffeedd, 1.2);
+      dirLight.position.set(5, 8, 5);
+      dirLight.castShadow = true;
+      scene.add(dirLight);
+
+      const fillLight = new THREE.DirectionalLight(0xaabbff, 0.4);
+      fillLight.position.set(-3, 4, -3);
+      scene.add(fillLight);
+
+      // Camera
+      camera = new THREE.PerspectiveCamera(50, wrap.clientWidth / wrap.clientHeight, 0.01, 100);
+      camera.position.set(3, 2.5, 3);
+
+      // Renderer
+      renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.setSize(wrap.clientWidth, wrap.clientHeight);
+      renderer.shadowMap.enabled = true;
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.0;
+
+      // Controls
+      controls = new OrbitControls(camera, canvas);
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.08;
+      controls.minDistance = 0.5;
+      controls.maxDistance = 20;
+      controls.target.set(0, 0.5, 0);
+
+      // Resize
+      const ro = new ResizeObserver(() => {
+        const w = wrap.clientWidth, h = wrap.clientHeight;
+        camera.aspect = w / h;
+        camera.updateProjectionMatrix();
+        renderer.setSize(w, h);
+      });
+      ro.observe(wrap);
+
+      animate();
+    }
+
+    function animate() {
+      requestAnimationFrame(animate);
+      const delta = clock.getDelta();
+      if (mixer) mixer.update(delta);
+      if (controls) controls.update();
+      if (renderer && scene && camera) renderer.render(scene, camera);
+
+      // Update timeline
+      if (currentAction && animPlaying) {
+        const slider = document.getElementById('anim-slider');
+        const cur = document.getElementById('anim-current');
+        const time = currentAction.time;
+        const dur = currentAction.getClip().duration;
+        slider.value = (time / dur) * 100;
+        cur.textContent = formatTime(time);
+      }
+    }
+
+    // ── Load model ──
+    window.loadModel = function(id) {
+      const model = models.find(m => m.id === id);
+      if (!model) return;
+
+      // Update UI
+      document.querySelectorAll('.model-thumb').forEach(t => t.classList.remove('active'));
+      document.querySelector(`[data-model="${id}"]`)?.classList.add('active');
+      document.getElementById('viewer-model-name').textContent = model.name;
+      document.getElementById('viewer-info').innerHTML = `<strong>${model.emoji} ${model.name}</strong> — ${model.desc}`;
+      document.getElementById('viewer-placeholder').style.display = 'none';
+
+      // Clear existing
+      if (currentModel) {
+        scene.remove(currentModel);
+        currentModel = null;
+      }
+      mixer = null;
+      currentAction = null;
+      animPlaying = false;
+      document.getElementById('btn-play').textContent = '▶ Play';
+      document.getElementById('anim-timeline').style.display = 'none';
+
+      // Show placeholder geometry for demo (since we don't have actual .glb files)
+      showPlaceholderGeometry(model);
+    };
+
+    function showPlaceholderGeometry(model) {
+      const group = new THREE.Group();
+      const color = new THREE.Color(model.color);
+      const mat = new THREE.MeshStandardMaterial({
+        color: color, roughness: 0.6, metalness: 0.1,
+        transparent: true, opacity: 0.85
+      });
+      const matWire = new THREE.MeshStandardMaterial({
+        color: color, wireframe: true, transparent: true, opacity: 0.3
+      });
+
+      if (model.id === 'hypocaustum') {
+        // Floor slab
+        const floor = new THREE.Mesh(new THREE.BoxGeometry(4, 0.15, 3), mat.clone());
+        floor.position.y = 1.2;
+        group.add(floor);
+        // Pilae (pillars)
+        for (let x = -1.5; x <= 1.5; x += 0.75) {
+          for (let z = -1; z <= 1; z += 0.66) {
+            const pillar = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.1, 1.0, 8), mat.clone());
+            pillar.position.set(x, 0.5, z);
+            group.add(pillar);
+          }
+        }
+        // Base
+        const base = new THREE.Mesh(new THREE.BoxGeometry(4.2, 0.1, 3.2), mat.clone());
+        base.material.opacity = 0.4;
+        group.add(base);
+        // Furnace hint
+        const furnace = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.8, 0.6), new THREE.MeshStandardMaterial({ color: 0xff4400, roughness: 0.8, emissive: 0xff2200, emissiveIntensity: 0.3 }));
+        furnace.position.set(-2.3, 0.4, 0);
+        group.add(furnace);
+      } else if (model.id === 'pilae') {
+        // Single detailed pila
+        const base = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.05, 0.3), mat.clone());
+        group.add(base);
+        for (let i = 0; i < 6; i++) {
+          const brick = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.12, 0.22), mat.clone());
+          brick.position.y = 0.09 + i * 0.14;
+          brick.rotation.y = i % 2 === 0 ? 0 : Math.PI / 4;
+          group.add(brick);
+        }
+        const cap = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.06, 0.35), mat.clone());
+        cap.position.y = 0.93;
+        group.add(cap);
+        group.scale.set(2, 2, 2);
+        group.position.y = -0.5;
+      } else if (model.id === 'tubuli') {
+        // Wall-mounted tubes
+        const wall = new THREE.Mesh(new THREE.BoxGeometry(2.5, 2, 0.1), new THREE.MeshStandardMaterial({ color: 0x665544, roughness: 0.9, transparent: true, opacity: 0.3 }));
+        wall.position.set(0, 1, -0.1);
+        group.add(wall);
+        for (let x = -0.8; x <= 0.8; x += 0.4) {
+          const tube = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 1.8, 8, 1, true), mat.clone());
+          tube.position.set(x, 1, 0);
+          group.add(tube);
+          // Connector
+          const conn = new THREE.Mesh(new THREE.TorusGeometry(0.07, 0.02, 8, 8), mat.clone());
+          conn.position.set(x, 0.3, 0);
+          group.add(conn);
+          const conn2 = new THREE.Mesh(new THREE.TorusGeometry(0.07, 0.02, 8, 8), mat.clone());
+          conn2.position.set(x, 1.7, 0);
+          group.add(conn2);
+        }
+      } else if (model.id === 'frigidarium') {
+        // Cold pool
+        const walls = new THREE.Mesh(new THREE.BoxGeometry(3, 0.8, 2.5), new THREE.MeshStandardMaterial({ color: 0x334466, roughness: 0.5, transparent: true, opacity: 0.3 }));
+        walls.position.y = 0.4;
+        group.add(walls);
+        const water = new THREE.Mesh(new THREE.BoxGeometry(2.8, 0.05, 2.3), new THREE.MeshStandardMaterial({ color: 0x4488cc, roughness: 0.1, metalness: 0.2, transparent: true, opacity: 0.6 }));
+        water.position.y = 0.65;
+        group.add(water);
+        // Steps
+        for (let i = 0; i < 3; i++) {
+          const step = new THREE.Mesh(new THREE.BoxGeometry(1, 0.15, 0.4), new THREE.MeshStandardMaterial({ color: 0x667788, roughness: 0.7 }));
+          step.position.set(0, 0.08 + i * 0.2, 1.5 - i * 0.3);
+          group.add(step);
+        }
+        // Columns
+        const colMat = new THREE.MeshStandardMaterial({ color: 0x889999, roughness: 0.4 });
+        [[-1.3, 0], [1.3, 0]].forEach(([x, z]) => {
+          const col = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.1, 1.8, 12), colMat);
+          col.position.set(x, 0.9, z - 1.3);
+          group.add(col);
+        });
+      } else if (model.id === 'caldarium') {
+        // Hot room
+        const floor = new THREE.Mesh(new THREE.CircleGeometry(1.5, 24), new THREE.MeshStandardMaterial({ color: 0x883322, roughness: 0.8 }));
+        floor.rotation.x = -Math.PI / 2;
+        floor.position.y = 0.01;
+        group.add(floor);
+        const pool = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, 0.5, 24), new THREE.MeshStandardMaterial({ color: 0xcc4422, roughness: 0.3, transparent: true, opacity: 0.4 }));
+        pool.position.y = 0.25;
+        group.add(pool);
+        const water = new THREE.Mesh(new THREE.CircleGeometry(0.95, 24), new THREE.MeshStandardMaterial({ color: 0xff6644, roughness: 0.1, transparent: true, opacity: 0.5, emissive: 0xff3300, emissiveIntensity: 0.15 }));
+        water.rotation.x = -Math.PI / 2;
+        water.position.y = 0.48;
+        group.add(water);
+        // Steam particles visual hint — small spheres
+        for (let i = 0; i < 12; i++) {
+          const steam = new THREE.Mesh(new THREE.SphereGeometry(0.04, 6, 6), new THREE.MeshStandardMaterial({ color: 0xffffff, transparent: true, opacity: 0.15 }));
+          steam.position.set((Math.random() - 0.5) * 1.5, 0.6 + Math.random() * 0.8, (Math.random() - 0.5) * 1.5);
+          group.add(steam);
+        }
+      }
+
+      // Add wireframe overlay
+      group.traverse(child => {
+        if (child.isMesh) {
+          const wf = new THREE.Mesh(child.geometry.clone(), matWire.clone());
+          wf.position.copy(child.position);
+          wf.rotation.copy(child.rotation);
+          wf.scale.copy(child.scale);
+          wf.visible = wireframeOn;
+          wf.userData.isWireframe = true;
+          group.add(wf);
+        }
+      });
+
+      scene.add(group);
+      currentModel = group;
+
+      // Fit camera
+      const box = new THREE.Box3().setFromObject(group);
+      const center = box.getCenter(new THREE.Vector3());
+      const size = box.getSize(new THREE.Vector3());
+      const maxDim = Math.max(size.x, size.y, size.z);
+      const dist = maxDim * 2;
+      controls.target.copy(center);
+      camera.position.set(center.x + dist * 0.7, center.y + dist * 0.5, center.z + dist * 0.7);
+      controls.update();
+    }
+
+    // ── Load custom .glb/.gltf ──
+    window.loadCustomModel = function(file) {
+      if (!file) return;
+
+      document.getElementById('viewer-placeholder').style.display = 'none';
+      document.getElementById('viewer-loading').style.display = 'flex';
+      document.getElementById('viewer-model-name').textContent = file.name;
+
+      if (currentModel) {
+        scene.remove(currentModel);
+        currentModel = null;
+      }
+      mixer = null; currentAction = null; animPlaying = false;
+      document.getElementById('btn-play').textContent = '▶ Play';
+      document.getElementById('anim-timeline').style.display = 'none';
+      document.querySelectorAll('.model-thumb').forEach(t => t.classList.remove('active'));
+
+      const url = URL.createObjectURL(file);
+      const loader = new GLTFLoader();
+
+      const dracoLoader = new DRACOLoader();
+      dracoLoader.setDecoderPath('https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/libs/draco/');
+      loader.setDRACOLoader(dracoLoader);
+
+      loader.load(url, (gltf) => {
+        document.getElementById('viewer-loading').style.display = 'none';
+
+        const model = gltf.scene;
+        scene.add(model);
+        currentModel = model;
+
+        // Fit camera
+        const box = new THREE.Box3().setFromObject(model);
+        const center = box.getCenter(new THREE.Vector3());
+        const size = box.getSize(new THREE.Vector3());
+        const maxDim = Math.max(size.x, size.y, size.z);
+        controls.target.copy(center);
+        camera.position.set(center.x + maxDim * 1.5, center.y + maxDim, center.z + maxDim * 1.5);
+        controls.update();
+
+        // Animations
+        if (gltf.animations && gltf.animations.length > 0) {
+          mixer = new THREE.AnimationMixer(model);
+          currentAction = mixer.clipAction(gltf.animations[0]);
+          document.getElementById('anim-timeline').style.display = 'flex';
+          document.getElementById('anim-duration').textContent = formatTime(gltf.animations[0].duration);
+          document.getElementById('viewer-info').innerHTML = `📂 ${file.name} — ${gltf.animations.length} animación(es) encontrada(s)`;
+        } else {
+          document.getElementById('viewer-info').innerHTML = `📂 ${file.name} — modelo estático`;
+        }
+
+        URL.revokeObjectURL(url);
+      }, undefined, (err) => {
+        document.getElementById('viewer-loading').style.display = 'none';
+        document.getElementById('viewer-info').innerHTML = `❌ Error al cargar: ${err.message}`;
+        URL.revokeObjectURL(url);
+      });
+    };
+
+    // ── Controls ──
+    window.toggleAnimation = function() {
+      if (!currentAction) return;
+      if (animPlaying) {
+        currentAction.paused = true;
+        animPlaying = false;
+        document.getElementById('btn-play').textContent = '▶ Play';
+      } else {
+        currentAction.paused = false;
+        currentAction.play();
+        animPlaying = true;
+        document.getElementById('btn-play').textContent = '⏸ Pause';
+      }
+    };
+
+    window.seekAnimation = function(val) {
+      if (!currentAction) return;
+      const dur = currentAction.getClip().duration;
+      currentAction.time = (val / 100) * dur;
+      document.getElementById('anim-current').textContent = formatTime(currentAction.time);
+      if (!animPlaying) {
+        currentAction.paused = false;
+        currentAction.play();
+        mixer.update(0);
+        currentAction.paused = true;
+      }
+    };
+
+    window.resetCamera = function() {
+      if (!controls) return;
+      controls.target.set(0, 0.5, 0);
+      camera.position.set(3, 2.5, 3);
+      controls.update();
+    };
+
+    window.toggleWireframe = function() {
+      wireframeOn = !wireframeOn;
+      const btn = document.getElementById('btn-wireframe');
+      btn.classList.toggle('active', wireframeOn);
+      if (currentModel) {
+        currentModel.traverse(child => {
+          if (child.isMesh && child.userData.isWireframe) {
+            child.visible = wireframeOn;
+          }
+        });
+      }
+    };
+
+    function formatTime(s) {
+      const m = Math.floor(s / 60);
+      const sec = Math.floor(s % 60);
+      return `${m}:${sec.toString().padStart(2, '0')}`;
+    }
+
+    // ── Build gallery thumbnails ──
+    function buildGallery() {
+      const container = document.getElementById('model-gallery');
+      models.forEach(m => {
+        const div = document.createElement('div');
+        div.className = 'model-thumb';
+        div.dataset.model = m.id;
+        div.onclick = () => window.loadModel(m.id);
+        div.innerHTML = `
+          <div class="model-thumb-img" style="background: linear-gradient(135deg, ${m.color}15, ${m.color}08);">
+            <span>${m.emoji}</span>
+          </div>
+          <div class="model-thumb-label">${m.name}</div>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    // ── Init ──
+    buildGallery();
+    initViewer();
+  </script>
+
+  <!-- ═══════════ MAIN SCRIPT ═══════════ -->
+  <script>
+    // ══════════════════════════════════════
+    // NAV
+    // ══════════════════════════════════════
+    function closeNav() {
+      document.querySelector('nav').classList.remove('open');
+    }
+
+    // Active nav on scroll
+    const sections = document.querySelectorAll('section[id]');
+    const navLinks = document.querySelectorAll('nav a');
+
+    window.addEventListener('scroll', () => {
+      const scrollY = window.scrollY + 120;
+      sections.forEach(sec => {
+        const top = sec.offsetTop;
+        const h = sec.offsetHeight;
+        const id = sec.id;
+        if (scrollY >= top && scrollY < top + h) {
+          navLinks.forEach(a => a.classList.remove('active'));
+          const link = document.querySelector(`nav a[href="#${id}"]`);
+          if (link) link.classList.add('active');
+        }
+      });
+    });
+
+    // ══════════════════════════════════════
+    // FADE IN OBSERVER
+    // ══════════════════════════════════════
+    const fadeObserver = new IntersectionObserver((entries) => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          e.target.classList.add('visible');
+          fadeObserver.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.15 });
+
+    document.querySelectorAll('.fade-in').forEach(el => fadeObserver.observe(el));
+
+    // ══════════════════════════════════════
+    // CSV DATA & RENDERING
+    // ══════════════════════════════════════
+    const csvData = {
+      hallazgos: {
+        headers: ['nombre', 'periodo', 'año', 'descripcion', 'emoji', 'color'],
+        rows: [
+          ['Cerámica Terra Sigillata', 'Romano', '120 d.C.', 'Fragmentos de cerámica fina de mesa, importada de talleres galos. Indica el alto estatus del complejo termal.', '🏺', '#c9842a'],
+          ['Mosaico del Triclinium', 'Romano', '150 d.C.', 'Pavimento musivario con motivos geométricos y marinos. Teselas de caliza y pasta vítrea.', '🎨', '#4466ff'],
+          ['Enterramiento Medieval', 'Medieval', '900 d.C.', 'Sepultura en cista de lajas sobre las ruinas termales. Evidencia de reutilización del espacio.', '⚰️', '#666688'],
+          ['Muralla del Castro', 'Prerromano', '300 a.C.', 'Cimentación de muralla castreña preexistente al complejo romano. Aparejo poligonal.', '🏰', '#558844'],
+          ['Hogar Prehistórico', 'Prehistórico', '2000 a.C.', 'Restos de hogar con carbones y cerámicas incisas. Ocupación previa de la Edad del Bronce.', '🔥', '#cc4422'],
+        ]
+      },
+      posiciones: {
+        headers: ['nombre', 'x', 'y', 'z', 'rotacion_y'],
+        rows: [
+          ['Cerámica Terra Sigillata', '2.5', '0.0', '1.2', '0'],
+          ['Mosaico del Triclinium', '0.0', '0.0', '0.0', '0'],
+          ['Enterramiento Medieval', '-1.8', '0.0', '2.5', '90'],
+          ['Muralla del Castro', '4.0', '0.0', '-1.0', '45'],
+          ['Hogar Prehistórico', '-3.0', '0.0', '-2.0', '0'],
+        ]
+      },
+      reconstrucciones: {
+        headers: ['nombre', 'ancho', 'alto', 'largo', 'x', 'y', 'z', 'descripcion', 'color'],
+        rows: [
+          ['Hypocaustum', '4.0', '1.5', '3.0', '0', '0', '0', 'Sistema de calefacción subterráneo con pilae', '#ffa030'],
+          ['Frigidarium', '3.0', '2.0', '2.5', '-5', '0', '0', 'Sala fría con piscina', '#6496ff'],
+          ['Tepidarium', '3.5', '2.2', '3.0', '0', '0', '-4', 'Sala templada de transición', '#c9842a'],
+          ['Caldarium', '3.0', '2.5', '3.0', '5', '0', '0', 'Sala caliente con alveus', '#dc3c3c'],
+          ['Praefurnium', '1.5', '1.0', '2.0', '-2', '0', '3', 'Horno para calentar el hypocaustum', '#ff6600'],
+        ]
+      }
+    };
+
+    function renderCSVTable(key) {
+      const data = csvData[key];
+      if (!data) return '';
+
+      let html = '<div class="csv-table-wrap"><table class="csv-table"><thead><tr>';
+      data.headers.forEach(h => {
+        html += `<th>${h.replace(/_/g, ' ')}</th>`;
+      });
+      html += '</tr></thead><tbody>';
+
+      data.rows.forEach(row => {
+        html += '<tr>';
+        row.forEach((cell, i) => {
+          const header = data.headers[i];
+          if (header === 'color') {
+            html += `<td><span class="color-dot" style="background:${cell}"></span>${cell}</td>`;
+          } else if (header === 'emoji') {
+            html += `<td style="font-size:1.3rem; text-align:center;">${cell}</td>`;
+          } else {
+            html += `<td>${cell}</td>`;
+          }
+        });
+        html += '</tr>';
+      });
+
+      html += '</tbody></table></div>';
+      return html;
+    }
+
+    // Render initial tables
+    Object.keys(csvData).forEach(key => {
+      document.getElementById(`csv-${key}`).innerHTML = renderCSVTable(key);
+    });
+
+    function showCSV(key) {
+      document.querySelectorAll('.csv-tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.csv-panel').forEach(p => p.classList.remove('active'));
+      event.target.classList.add('active');
+      document.getElementById(`csv-${key}`).classList.add('active');
+    }
+
+    // Load custom CSV
+    function loadCustomCSV(file) {
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const text = e.target.result;
+        const lines = text.trim().split('\n');
+        if (lines.length < 2) return;
+
+        const headers = lines[0].split(',').map(h => h.trim());
+        const rows = lines.slice(1).map(l => l.split(',').map(c => c.trim()));
+
+        // Add new tab
+        const key = file.name.replace('.csv', '').replace(/[^a-z0-9]/gi, '_');
+        const tabsEl = document.querySelector('.csv-tabs');
+        const btn = document.createElement('button');
+        btn.className = 'csv-tab';
+        btn.textContent = `📄 ${file.name}`;
+        btn.onclick = function() { showCSVCustom(key, this); };
+        tabsEl.appendChild(btn);
+
+        // Add panel
+        const panel = document.createElement('div');
+        panel.className = 'csv-panel';
+        panel.id = `csv-${key}`;
+        csvData[key] = { headers, rows };
+        panel.innerHTML = renderCSVTable(key);
+        document.querySelector('.csv-upload-area').before(panel);
+
+        // Show it
+        btn.click();
+      };
+      reader.readAsText(file);
+    }
+
+    function showCSVCustom(key, btn) {
+      document.querySelectorAll('.csv-tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.csv-panel').forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById(`csv-${key}`).classList.add('active');
+    }
+
+    // ══════════════════════════════════════
+    // GALLERY
+    // ══════════════════════════════════════
+    const galleryAR = [
+      { caption: 'Vista aérea del yacimiento con modelo 3D del Hypocaustum superpuesto', icon: '🏗️' },
+      { caption: 'Reconstrucción AR del Frigidarium sobre los restos de la piscina', icon: '🧊' },
+      { caption: 'Superposición del Caldarium sobre la estructura original', icon: '🔥' },
+      { caption: 'Tubuli cerámicos — modelo 3D vs. restos reales', icon: '🔧' },
+      { caption: 'Panorámica AR: termas completas reconstruidas', icon: '🏛️' },
+      { caption: 'Detalle del Praefurnium: horno y conductos de calor', icon: '♨️' },
+    ];
+
+    const galleryStudents = [
+      { caption: 'Equipo FLL diseñando la disposición del yacimiento 3D', icon: '👩‍💻' },
+      { caption: 'Sesión de modelado 3D en el Maker Lab', icon: '🎨' },
+      { caption: 'Prototipo de anclaje AR con marcadores del mundo real', icon: '📱' },
+      { caption: 'Maqueta física de las Termas para referencia', icon: '🏗️' },
+      { caption: 'Presentación del proyecto en la jornada FLL regional', icon: '🎤' },
+      { caption: 'Testing WebAR en el yacimiento real de Caldoval', icon: '🔬' },
+    ];
+
+    function buildGallerySection(items, containerId) {
+      const container = document.getElementById(containerId);
+      items.forEach((item, i) => {
+        const div = document.createElement('div');
+        div.className = 'gallery-item';
+        div.onclick = () => openLightbox(null, item.caption);
+        div.innerHTML = `
+          <div class="gallery-placeholder">
+            <div class="gp-icon">${item.icon}</div>
+            <div class="gp-text">${item.caption}</div>
+          </div>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    buildGallerySection(galleryAR, 'gallery-ar');
+    buildGallerySection(galleryStudents, 'gallery-students');
+
+    // ══════════════════════════════════════
+    // LIGHTBOX
+    // ══════════════════════════════════════
+    function openLightbox(src, caption) {
+      const lb = document.getElementById('lightbox');
+      const img = document.getElementById('lightbox-img');
+      const cap = document.getElementById('lightbox-caption');
+      if (src) {
+        img.src = src;
+        img.style.display = 'block';
+      } else {
+        img.style.display = 'none';
+      }
+      cap.textContent = caption || '';
+      lb.classList.add('open');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeLightbox() {
+      document.getElementById('lightbox').classList.remove('open');
+      document.body.style.overflow = '';
+    }
+
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape') closeLightbox();
+    });
+
+    // ══════════════════════════════════════
+    // FORM
+    // ══════════════════════════════════════
+    function submitForm(e) {
+      e.preventDefault();
+      document.getElementById('site-form').style.display = 'none';
+      document.getElementById('form-success').style.display = 'block';
+      return false;
+    }
+
+    // ══════════════════════════════════════
+    // DROP ZONE VISUAL FEEDBACK
+    // ══════════════════════════════════════
+    document.querySelectorAll('.drop-zone').forEach(zone => {
+      ['dragenter', 'dragover'].forEach(evt => {
+        zone.addEventListener(evt, e => {
+          e.preventDefault();
+          zone.style.borderColor = '#c9842a';
+          zone.style.background = 'rgba(201,132,42,0.06)';
+        });
+      });
+
+      ['dragleave', 'drop'].forEach(evt => {
+        zone.addEventListener(evt, e => {
+          e.preventDefault();
+          zone.style.borderColor = '';
+          zone.style.background = '';
+        });
+      });
+
+      zone.addEventListener('drop', e => {
+        const input = zone.querySelector('input[type="file"]');
+        if (input && e.dataTransfer.files.length) {
+          input.files = e.dataTransfer.files;
+          // Visual feedback
+          const count = e.dataTransfer.files.length;
+          const nameEl = zone.querySelector('.dz-text');
+          if (nameEl) {
+            nameEl.textContent = `${count} archivo(s) seleccionado(s)`;
+            nameEl.style.color = '#c9842a';
+          }
+        }
+      });
+    });
+
+    // Expose functions globally
+    window.showCSV = showCSV;
+    window.loadCustomCSV = loadCustomCSV;
+    window.submitForm = submitForm;
+    window.closeLightbox = closeLightbox;
+    window.closeNav = closeNav;
+  </script>
+
+</body>
+</html>

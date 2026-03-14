@@ -2,7 +2,8 @@
 *.ply
 *.jpg
 *.jpeg
-*.png
 *.zip
 node_modules/
 .DS_Store
+# Keep logo
+!logo-vision-maker-lab.png
